@@ -3,6 +3,8 @@
 *.lo
 *.o
 *.obj
+*.d
+*.map
 
 # Precompiled Headers
 *.gch
@@ -26,3 +28,17 @@
 *.exe
 *.out
 *.app
+*.axf
+*.hex
+
+*.dep
+*.bak
+*.lst
+*.lnp
+*.uvoptx
+*.htm
+*.uvguix*
+JLinkLog.txt
+
+/objects/
+/boost/
