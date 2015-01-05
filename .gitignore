@@ -5,6 +5,7 @@
 *.obj
 *.d
 *.map
+*.crf
 
 # Precompiled Headers
 *.gch
@@ -36,8 +37,9 @@
 *.lst
 *.lnp
 *.uvoptx
+*.uvopt
 *.htm
-*.uvguix*
+*.uvgui*
 JLinkLog.txt
 
 **/objects/
