@@ -40,5 +40,5 @@
 *.uvguix*
 JLinkLog.txt
 
-/objects/
-/boost/
+**/objects/
+**/boost/
