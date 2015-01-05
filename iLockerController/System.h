@@ -13,15 +13,5 @@ extern ARM_DRIVER_SPI Driver_SPI2;
 extern ARM_DRIVER_SPI Driver_SPI3;
 extern ARM_DRIVER_USART Driver_USART2;
 extern ARM_DRIVER_USART Driver_USART3;
-
-#ifdef __cplusplus
-extern "C" {
-#endif  /* __cplusplus */
-
-void SetupSystemClock(void);
-
-#ifdef __cplusplus
-}
-#endif  /* __cplusplus */
 	
 #endif

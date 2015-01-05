@@ -12,8 +12,6 @@
 
 using namespace std;
 
-
-
 boost::shared_ptr<CANExtended::CanEx> CanEx;
 
 char con = 0;
@@ -100,8 +98,7 @@ Spansion::Flash *nvrom;
 
 int main()
 {
-	HAL_Init();                                /* Initialize the HAL Library    */
-	SetupSystemClock();
+	HAL_Init();		/* Initialize the HAL Library    */
 	
 	Spansion::Flash source(&Driver_SPI2, GPIOB, GPIO_PIN_12);
 	
