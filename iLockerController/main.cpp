@@ -7,12 +7,14 @@
 #include "rl_usb.h"                     // Keil.MDK-Pro::USB:CORE
 #include "System.h"
 #include "CanEx.h"
+#include "NetworkConfig.h"
 #include "s25fl064.h"
 
 
 using namespace std;
 
 boost::shared_ptr<CANExtended::CanEx> CanEx;
+boost::shared_ptr<NetworkConfig> ethConfig;
 
 char con = 0;
 
@@ -94,6 +96,13 @@ void KeyRead_Thread (void const *arg)
 
 osThreadDef(KeyRead_Thread, osPriorityNormal, 1, NULL);
 
+void SystemHeartbeat(void const *argument)
+{
+	//cout<<"Heartbeat Start"<<endl;
+	HAL_GPIO_TogglePin(STATUS_PIN);
+}
+osTimerDef(TimerHB, SystemHeartbeat);
+
 Spansion::Flash *nvrom;
 
 int main()
@@ -103,6 +112,8 @@ int main()
 	Spansion::Flash source(&Driver_SPI2, GPIOB, GPIO_PIN_12);
 	
 	nvrom = &source;
+	
+	ethConfig.reset(new NetworkConfig(Driver_USART2));
 	
 	//Initialize CAN
 	CanEx.reset(new CANExtended::CanEx(Driver_CAN1, 0x001));
@@ -118,6 +129,10 @@ int main()
 	
 	//Initialize Ethernet interface
   net_initialize();
+	
+	//Initialize system heatbeat
+	osTimerId id = osTimerCreate(osTimer(TimerHB), osTimerPeriodic, NULL);
+  osTimerStart(id, 500); 
 	
 	while(1) 
 	{

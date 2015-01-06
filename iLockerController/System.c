@@ -1,6 +1,12 @@
 #include "stm32f4xx.h"                  // Device header
-#include "stm32f4xx_hal_conf.h"         // Keil::Device:STM32Cube Framework:Classic
 #include "cmsis_os.h"                   // ARM::CMSIS:RTOS:Keil RTX
+#include "System.h"
+
+RNG_HandleTypeDef RNGHandle = { RNG, 
+																HAL_UNLOCKED,
+																HAL_RNG_STATE_RESET };
+
+const uint8_t *UserFlash = (const uint8_t *)USER_ADDR;
 
 //SYSCLK       168000000
 //AHB Clock    168000000
@@ -115,6 +121,9 @@ void HAL_MspInit(void)
 {
 	InitSystemClock();
 	IOSetup();
+	
+	__RNG_CLK_ENABLE();
+	HAL_RNG_Init(&RNGHandle);
 }
 
 #ifdef __cplusplus

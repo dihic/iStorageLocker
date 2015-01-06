@@ -1,25 +1,14 @@
 #include "Guid.h"
-#include "stm32f4xx_rng.h"
+#include "System.h"
+
 
 using namespace std;
 
-bool Guid::isInit=false;
-
 void Guid::New()
 {
-	if (!isInit)
-	{
-		RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_RNG, ENABLE);
-		RNG_Cmd(ENABLE);
-		RNG_ITConfig(ENABLE);
-		isInit=true;
-	}
 	uint32_t *ptr = reinterpret_cast<uint32_t *>(raw);
 	for(int i=0;i<4;++i)
-	{
-		while (RNG_GetFlagStatus(RNG_FLAG_DRDY)==RESET);
-		ptr[i] = RNG_GetRandomNumber();
-	}
+		ptr[i] = GET_RANDOM_NUMBER;
 	uint8_t y = (raw[8]&0x30) | 0x80;
 	raw[8] = y | (raw[8] & 0x0f);
 #ifdef GUID_BIGENDIAN

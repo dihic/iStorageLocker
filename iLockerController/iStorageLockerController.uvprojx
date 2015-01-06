@@ -147,7 +147,7 @@
             <RestoreSysVw>1</RestoreSysVw>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>11</TargetSelection>
+          <TargetSelection>6</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -161,7 +161,7 @@
             <PeripheralDll></PeripheralDll>
             <PeripheralDllArguments></PeripheralDllArguments>
             <InitializationFile></InitializationFile>
-            <Driver>STLink\ST-LINKIII-KEIL_SWO.dll</Driver>
+            <Driver>Segger\JL2CM3.dll</Driver>
           </TargetDlls>
         </DebugOption>
         <Utilities>
@@ -443,6 +443,61 @@
               <FileType>1</FileType>
               <FilePath>.\Driver_CAN.c</FilePath>
             </File>
+            <File>
+              <FileName>ConfigComm.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\ConfigComm.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>NetworkConfig.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\NetworkConfig.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>TypeInfoBase.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\TypeInfoBase.cpp</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>BSON</GroupName>
+          <Files>
+            <File>
+              <FileName>BsonBinary.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\bson\BsonBinary.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>BsonCString.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\bson\BsonCString.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>BsonDocument.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\bson\BsonDocument.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>BsonString.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\bson\BsonString.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>Element.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\bson\Element.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>Guid.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\bson\Guid.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>MemStream.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\bson\MemStream.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -469,7 +524,11 @@
       <api Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="Ethernet" exclusive="0">
         <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.2.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <c>
+              <Define>ETH_SPI_PORT=1</Define>
+            </c>
+          </targetInfo>
         </targetInfos>
       </api>
       <api Capiversion="2.02" Cclass="CMSIS Driver" Cgroup="I2C" exclusive="0">
@@ -629,6 +688,12 @@
         </targetInfos>
       </component>
       <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="DMA" Cvendor="Keil" Cversion="1.1.0" condition="STM32F4 HAL">
+        <package name="STM32F4xx_DFP" schemaVersion="1.2" url="http://www.keil.com/pack" vendor="Keil" version="2.3.0"/>
+        <targetInfos>
+          <targetInfo name="Target 1"/>
+        </targetInfos>
+      </component>
+      <component Cclass="Device" Cgroup="STM32Cube HAL" Csub="Flash" Cvendor="Keil" Cversion="1.1.0" condition="STM32F4 HAL">
         <package name="STM32F4xx_DFP" schemaVersion="1.2" url="http://www.keil.com/pack" vendor="Keil" version="2.3.0"/>
         <targetInfos>
           <targetInfo name="Target 1"/>

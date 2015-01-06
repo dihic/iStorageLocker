@@ -11,7 +11,6 @@
 class Guid
 {
 	private:
-		static bool isInit;
 		static const Guid Empty;
 		static std::string DigitToStringHelper(std::uint8_t *digit, std::int8_t size, bool bigEndian);
 		std::uint8_t raw[16]  __attribute__((aligned(4)));
