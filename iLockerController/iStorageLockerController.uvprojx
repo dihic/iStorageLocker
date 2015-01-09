@@ -52,7 +52,7 @@
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
           <DebugInformation>1</DebugInformation>
-          <BrowseInformation>0</BrowseInformation>
+          <BrowseInformation>1</BrowseInformation>
           <ListingPath>.\</ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
           <Merge32K>0</Merge32K>
@@ -363,7 +363,7 @@
             <useXO>0</useXO>
             <VariousControls>
               <MiscControls>--gnu</MiscControls>
-              <Define>HSE_VALUE=25000000</Define>
+              <Define>HSE_VALUE=25000000, DEBUG_PRINT</Define>
               <Undefine></Undefine>
               <IncludePath>.\bson;.\</IncludePath>
             </VariousControls>
@@ -395,7 +395,7 @@
             <TextAddressRange>0x08000000</TextAddressRange>
             <DataAddressRange>0x20000000</DataAddressRange>
             <pXoBase></pXoBase>
-            <ScatterFile></ScatterFile>
+            <ScatterFile>.\Objects\iStorageLockerController.sct</ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
             <Misc></Misc>
@@ -587,7 +587,7 @@
           <targetInfo name="Target 1"/>
         </targetInfos>
       </component>
-      <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="CORE" Cvariant="Release" Cvendor="Keil" Cversion="6.2.0" condition="CMSIS Core with RTOS">
+      <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="CORE" Cvariant="Debug" Cvendor="Keil" Cversion="6.2.0" condition="CMSIS Core with RTOS">
         <package name="MDK-Middleware" schemaVersion="1.0" url="http://www.keil.com/pack/" vendor="Keil" version="6.2.0"/>
         <targetInfos>
           <targetInfo name="Target 1"/>
@@ -614,7 +614,7 @@
       <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="Host" Cvendor="Keil" Cversion="6.2.0" condition="USB Core and Host Driver" maxInstances="4">
         <package name="MDK-Middleware" schemaVersion="1.0" url="http://www.keil.com/pack/" vendor="Keil" version="6.2.0"/>
         <targetInfos>
-          <targetInfo instances="2" name="Target 1" versionMatchMode=""/>
+          <targetInfo name="Target 1" versionMatchMode=""/>
         </targetInfos>
       </component>
       <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="Host" Csub="HID" Cvendor="Keil" Cversion="6.2.0" condition="USB Host">
@@ -627,8 +627,12 @@
         <package name="MDK-Middleware" schemaVersion="1.0" url="http://www.keil.com/pack/" vendor="Keil" version="6.2.0"/>
         <targetInfos>
           <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
             <c>
-              <Define>ETH_SPI_PORT=1</Define>
+              <Define>ETH_SPI_PORT=1, ETH_SPI_BUS_SPEED=100000000</Define>
             </c>
           </targetInfo>
         </targetInfos>
@@ -642,7 +646,12 @@
       <component Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="SPI" Cvendor="Keil" Cversion="2.01" condition="STM32F4 CMSIS_Driver SPI">
         <package name="STM32F4xx_DFP" schemaVersion="1.2" url="http://www.keil.com/pack" vendor="Keil" version="2.3.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </component>
       <component Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="USART" Cvendor="Keil" Cversion="2.01" condition="STM32F4 CMSIS_Driver USART">
@@ -825,6 +834,14 @@
         <package name="MDK-Middleware" schemaVersion="1.0" url="http://www.keil.com/pack/" vendor="Keil" version="6.2.0"/>
         <targetInfos/>
       </file>
+      <file attr="config" category="source" name="Network\Config\Net_Debug.c" version="5.00">
+        <instance index="0">RTE\Network\Net_Debug.c</instance>
+        <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="CORE" Cvariant="Debug" Cvendor="Keil" Cversion="6.2.0" condition="CMSIS Core with RTOS"/>
+        <package name="MDK-Middleware" schemaVersion="1.0" url="http://www.keil.com/pack/" vendor="Keil" version="6.2.0"/>
+        <targetInfos>
+          <targetInfo name="Target 1"/>
+        </targetInfos>
+      </file>
       <file attr="config" category="source" name="USB\Config\USBH_Config.c" version="5.01">
         <instance index="0">RTE\USB\USBH_Config_0.c</instance>
         <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="Host" Cvendor="Keil" Cversion="6.2.0" condition="USB Core and Host Driver" maxInstances="4"/>
@@ -834,12 +851,10 @@
         </targetInfos>
       </file>
       <file attr="config" category="source" name="USB\Config\USBH_Config.c" version="5.01">
-        <instance index="1">RTE\USB\USBH_Config_1.c</instance>
+        <instance index="1" removed="1">RTE\USB\USBH_Config_1.c</instance>
         <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="Host" Cvendor="Keil" Cversion="6.2.0" condition="USB Core and Host Driver" maxInstances="4"/>
         <package name="MDK-Middleware" schemaVersion="1.0" url="http://www.keil.com/pack/" vendor="Keil" version="6.2.0"/>
-        <targetInfos>
-          <targetInfo name="Target 1"/>
-        </targetInfos>
+        <targetInfos/>
       </file>
       <file attr="config" category="source" name="USB\Config\USBH_Config_HID.h" version="5.01">
         <instance index="0">RTE\USB\USBH_Config_HID.h</instance>

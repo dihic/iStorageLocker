@@ -48,7 +48,6 @@ namespace Spansion
 	{
 		private:
 			static void AccEnable(bool en);
-
 			ARM_DRIVER_SPI *driver;
 			GPIO_TypeDef *csPort;
 			uint16_t csPin;

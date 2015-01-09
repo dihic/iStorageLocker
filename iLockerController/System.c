@@ -19,43 +19,32 @@ extern "C" {
 
 void InitSystemClock()
 {
-	/* Enable Power Control clock */
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+
   __PWR_CLK_ENABLE();
-  
-  /* The voltage scaling allows optimizing the power consumption when the device is 
-     clocked below the maximum system frequency, to update the voltage scaling value 
-     regarding system frequency refer to product datasheet.  */
+
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-	
-	RCC_OscInitTypeDef oscType = {
-			RCC_OSCILLATORTYPE_HSE,
-			RCC_HSE_ON,
-			RCC_LSE_OFF,
-			RCC_HSI_ON,
-			0x00,
-			RCC_LSI_ON,
-			{
-				RCC_PLL_ON,
-				RCC_PLLSOURCE_HSE,
-				HSE_VALUE/1000000,
-				336,
-				RCC_PLLP_DIV2,
-				7
-			}
-		};
-	
-	HAL_RCC_OscConfig(&oscType);
-	
-	RCC_ClkInitTypeDef clkType = {
-			RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2,
-			RCC_SYSCLKSOURCE_PLLCLK,		//System Clock Source (SYSCLKS)
-			RCC_SYSCLK_DIV1,						//AHB Clock
-			RCC_HCLK_DIV4,							//APB1 Clock
-			RCC_HCLK_DIV2 							//APB2 Clock
-		};
-	
-	HAL_RCC_ClockConfig(&clkType, FLASH_LATENCY_5);
-		
+
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = HSE_VALUE/1000000;
+  RCC_OscInitStruct.PLL.PLLN = 336;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
+  HAL_RCC_OscConfig(&RCC_OscInitStruct);
+
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_SYSCLK|RCC_CLOCKTYPE_PCLK1
+                              |RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5);
+
+	HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_HSE, RCC_MCODIV_1); //Use HSE as MCO Source with same frequency
 	SystemCoreClockUpdate();
 }
 
@@ -68,6 +57,7 @@ void IOSetup()
 																0 };
 	
 	__GPIOA_CLK_ENABLE();
+	__GPIOB_CLK_ENABLE();
 	__GPIOC_CLK_ENABLE();
 	__GPIOE_CLK_ENABLE();
 	
@@ -79,8 +69,6 @@ void IOSetup()
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0, GPIO_PIN_SET);	//Source WP Set
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, GPIO_PIN_SET);	//Source HOLD Set
 
-	HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_HSE, RCC_MCODIV_1); //Use HSE as MCO Source with same frequency
-	osDelay(1);
 	//Configure PA8 as MCO1
 	gpioType.Pin = GPIO_PIN_8;
 	gpioType.Mode = GPIO_MODE_AF_PP;

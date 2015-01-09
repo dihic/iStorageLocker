@@ -53,7 +53,6 @@
 #define RTE_Network_Socket_TCP          /* Network Socket TCP */
 #define RTE_USB_Core                    /* USB Core */
 #define RTE_USB_Host_0                  /* USB Host 0 */
-#define RTE_USB_Host_1                  /* USB Host 1 */
 #define RTE_USB_Host_HID                /* USB Host HID */
 
 #endif /* RTE_COMPONENTS_H */

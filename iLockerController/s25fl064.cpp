@@ -9,17 +9,6 @@ using namespace std;
 
 namespace Spansion
 {
-	
-//extern "C"
-//{
-//	void SPISignalEvent(uint32_t event)
-//	{
-//		if (event==ARM_SPI_EVENT_TRANSFER_COMPLETE)
-//		{
-//			
-//		}
-//	}
-//}
 	void Flash::AccEnable(bool en)
 	{
 		//HAL_GPIO_WritePin(ACC_PIN, en?GPIO_PIN_SET:GPIO_PIN_RESET);
@@ -45,33 +34,41 @@ namespace Spansion
 										ARM_SPI_DATA_BITS(8) |
 										ARM_SPI_MSB_LSB |
 										ARM_SPI_SS_MASTER_UNUSED,
-										8000000);
+										25000000);
 																	
 		//cout<<"SPI Speed: "<<driver->Control(ARM_SPI_GET_BUS_SPEED,0)<<endl;
 	}
 	
 	bool Flash::IsAvailable()
 	{
-		const uint8_t request[] = {COMMAND_READ_ID, 0, 0, 0, 0, 0};
-		uint8_t response[6];
+		static const uint8_t request[] = {COMMAND_READ_ID, 0, 0, 0, 0, 0};
+		uint8_t *response=new uint8_t[6];
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
 		driver->Transfer(request,response,6);
 		SpiSync();
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
-		return (response[4]==0x01 && response[5]==0x16);
+		bool result = response[4]==0x01 && response[5]==0x16;
+		delete[] response;
+		return result;
 	}
 	
 	void Flash::FastReadMemory(uint32_t address, uint8_t *data, uint32_t length)
 	{
 		WaitForWriting();
 		address &= MAX_ADDRESS;
-		uint8_t command[] = {COMMAND_FAST_READ, address>>16, (address&0xff00)>>8, address&0xff, 0};
+		uint8_t *command = new uint8_t[5];
+		command[0] = COMMAND_FAST_READ;
+		command[1] = (address>>16) & 0xff;
+		command[2] = (address>>8) & 0xff;
+		command[3] = address & 0xff;
+		command[4] = 0;
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
 		driver->Send(command, 5);
 		SpiSync();
 		driver->Receive(data, length);
 		SpiSync();
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
+		delete[] command;
 	}
 	
   void Flash::SpiSync()
@@ -85,22 +82,27 @@ namespace Spansion
 	
 	void Flash::WriteAccess(bool enable)
 	{
-		uint8_t val=enable ? COMMAND_WREN : COMMAND_WRDI;
+		static const uint8_t command_wr[] = { COMMAND_WREN, COMMAND_WRDI};
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
-		driver->Send(&val, 1);
+		if (enable)
+			driver->Send(command_wr, 1);
+		else
+			driver->Send(command_wr+1, 1);
 		SpiSync();
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
 	}
 
 	uint8_t Flash::ReadStatus()
 	{
-		uint8_t buf[4];
-		buf[0]=COMMAND_RDSR;
+		uint8_t *buf = new uint8_t[4];
+		buf[0] = COMMAND_RDSR;
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
 		driver->Transfer(buf, buf+2, 2);
 		SpiSync();
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
-		return buf[3];
+		uint8_t result = buf[3];
+		delete[] buf;
+		return result;
 	}
 //	
 //	void ReadMemory(uint32_t address,uint8_t *data,uint32_t length)
@@ -119,7 +121,7 @@ namespace Spansion
 		if (!writing)
 			return 0;
 		const uint8_t command = COMMAND_RDSR;
-		uint8_t status;
+		uint8_t *status = new uint8_t;
 		if (acc)
 			AccEnable(true);
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
@@ -127,20 +129,22 @@ namespace Spansion
 		SpiSync();
 		do
 		{
-			driver->Receive(&status, 1);
+			driver->Receive(status, 1);
 			SpiSync();
-		} while (status & 0x01);
+		} while (*status & 0x01);
+		uint8_t result = *status;
+		delete status;
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
 		if (acc)
 			AccEnable(false);
 		writing = false;
-		return status;
+		return result;
 	}
 	
 	uint8_t Flash::BulkErase()
 	{
 		WaitForWriting();
-		uint8_t val = COMMAND_BE;
+		static const uint8_t val = COMMAND_BE;
 		WriteAccess(true);
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
 		driver->Send(&val, 1);
@@ -153,20 +157,24 @@ namespace Spansion
 	uint8_t Flash::SectorErase(uint8_t sector)
 	{
 		WaitForWriting();
-		uint8_t buf[4]={COMMAND_SE,sector,0,0};
+		uint8_t *buf = new uint8_t[4];
+		buf[0] = COMMAND_SE;
+		buf[1] = sector;
+		buf[2] = buf[3] = 0;
 		WriteAccess(true);
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
 		driver->Send(buf, 4);
 		SpiSync();
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
 		writing = true;
+		delete[] buf;
 		return 0;
 	}
 	
 	uint8_t Flash::PageProgram(uint32_t address, uint8_t *data, uint32_t length)
 	{
-		uint8_t buf[4];
-		uint8_t temp[0x100];
+		uint8_t *buf = new uint8_t[4];
+		uint8_t *temp = new uint8_t[0x100];
 		uint8_t offset=address&0xff;
 		
 		if (offset!=0)
@@ -210,7 +218,8 @@ namespace Spansion
 			writing = true;
 			address+=0x100;
 		}
-		
+		delete[] buf;
+		delete[] temp;
 		return 0;
 	}
 	

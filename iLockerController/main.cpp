@@ -30,7 +30,9 @@ void USBH_Thread (void const *arg) {
   //char out    =  1;                          /* Output to keyboard LEDs       */
 
   USBH_Initialize (0);                       /* Initialize USB Host 0         */
-  USBH_Initialize (1);                     /* Initialize USB Host 1         */
+  //USBH_Initialize (1);                     /* Initialize USB Host 1         */
+	
+	osDelay(100);
 
   while (1) {
     con = USBH_HID_GetDeviceStatus(0) == usbOK;  /* Get kbd connection status */
@@ -107,9 +109,12 @@ Spansion::Flash *nvrom;
 
 int main()
 {
-	HAL_Init();		/* Initialize the HAL Library    */
+	//HAL_Init();		/* Initialize the HAL Library    */
+	HAL_MspInit();
 	
 	Spansion::Flash source(&Driver_SPI2, GPIOB, GPIO_PIN_12);
+	
+	cout<<"Flash "<<(source.IsAvailable()?"available":"missing")<<endl;
 	
 	nvrom = &source;
 	
@@ -129,6 +134,8 @@ int main()
 	
 	//Initialize Ethernet interface
   net_initialize();
+	
+	cout<<"LAN SPI Speed: "<<Driver_SPI1.Control(ARM_SPI_GET_BUS_SPEED, 0)<<endl;
 	
 	//Initialize system heatbeat
 	osTimerId id = osTimerCreate(osTimer(TimerHB), osTimerPeriodic, NULL);
