@@ -458,6 +458,11 @@
               <FileType>8</FileType>
               <FilePath>.\TypeInfoBase.cpp</FilePath>
             </File>
+            <File>
+              <FileName>UsbKeyboard.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\UsbKeyboard.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -525,8 +530,12 @@
         <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.2.0"/>
         <targetInfos>
           <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
             <c>
-              <Define>ETH_SPI_PORT=1</Define>
+              <Define>ETH_SPI_PORT=1, ETH_SPI_BUS_SPEED=100000000</Define>
             </c>
           </targetInfo>
         </targetInfos>
@@ -540,7 +549,12 @@
       <api Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="SPI" exclusive="0">
         <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.2.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </api>
       <api Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="USART" exclusive="0">
@@ -587,7 +601,7 @@
           <targetInfo name="Target 1"/>
         </targetInfos>
       </component>
-      <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="CORE" Cvariant="Debug" Cvendor="Keil" Cversion="6.2.0" condition="CMSIS Core with RTOS">
+      <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="CORE" Cvariant="Release" Cvendor="Keil" Cversion="6.2.0" condition="CMSIS Core with RTOS">
         <package name="MDK-Middleware" schemaVersion="1.0" url="http://www.keil.com/pack/" vendor="Keil" version="6.2.0"/>
         <targetInfos>
           <targetInfo name="Target 1"/>
@@ -835,12 +849,10 @@
         <targetInfos/>
       </file>
       <file attr="config" category="source" name="Network\Config\Net_Debug.c" version="5.00">
-        <instance index="0">RTE\Network\Net_Debug.c</instance>
+        <instance index="0" removed="1">RTE\Network\Net_Debug.c</instance>
         <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="CORE" Cvariant="Debug" Cvendor="Keil" Cversion="6.2.0" condition="CMSIS Core with RTOS"/>
         <package name="MDK-Middleware" schemaVersion="1.0" url="http://www.keil.com/pack/" vendor="Keil" version="6.2.0"/>
-        <targetInfos>
-          <targetInfo name="Target 1"/>
-        </targetInfos>
+        <targetInfos/>
       </file>
       <file attr="config" category="source" name="USB\Config\USBH_Config.c" version="5.01">
         <instance index="0">RTE\USB\USBH_Config_0.c</instance>
