@@ -261,15 +261,15 @@ void CanexSyncTrigger(uint16_t index, uint8_t mode)
 				syncBuf[0] = *pRfidCardType; 		//Card Type
 				memcpy(syncBuf+1, (void *)(MemBuffer+0x20), 8);	  	//Card Id
 				if (*pRfidCardType == 2)
-				{
-					presId = cardInfo->GetPresId(syncBuf[8]);
-					memcpy(syncBuf+9, presId, syncBuf[8]);
-					syncBuf[9+syncBuf[8]]=IS_DOOR_OPEN;
-					syncEntry.entrytype_len = 10+syncBuf[8];
+				{					
+					presId = cardInfo->GetPresId(syncBuf[9]);
+					memcpy(syncBuf+10, presId, syncBuf[9]);
+					syncBuf[10+syncBuf[9]]=IS_DOOR_OPEN;
+					syncEntry.entrytype_len = 11+syncBuf[9];
 				}
 				else
 				{
-					syncBuf[9]=IS_DOOR_OPEN;
+					syncBuf[9] = IS_DOOR_OPEN;
 					syncEntry.entrytype_len = 10;
 				}
 				syncTriggered = true;

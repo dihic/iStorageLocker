@@ -47,31 +47,40 @@ namespace IntelliStorage
 		CanDevice::ProcessRecievedEvent(entry);
 
 		std::uint8_t *rawData = entry->GetVal().get();
-
-		if (lastCardType == rawData[0])
-			return;
-		lastCardType = rawData[0];
+		uint8_t offset = 1;
 		
-		switch (rawData[0])
+		if (lastCardType != rawData[0])
 		{
-			case 0:
-				card->State = CardLeft;
-				//card->CardId.clear();
-				//card->PresId.clear();
-				break;
-			case 1:
-				return;
-			case 2:
-				card->State = CardArrival;
-				card->CardId.clear();
-				card->PresId.clear();
-				
-				card->CardId = GenerateId(rawData+1, 8);
-				card->PresId.append(reinterpret_cast<char *>(rawData+10), rawData[9]);
-				break;
+			lastCardType = rawData[0];
+		
+			switch (rawData[0])
+			{
+				case 0:
+					card->State = CardLeft;
+					break;
+				case 1:
+					offset = 9;
+					break;
+				case 2:
+					card->State = CardArrival;
+					card->CardId.clear();
+					card->PresId.clear();
+					
+					card->CardId = GenerateId(rawData+1, 8);
+					card->PresId.append(reinterpret_cast<char *>(rawData+10), rawData[9]);
+					offset = 10+rawData[9];
+					break;
+			}
+			cardChanged = true;
 		}
 		
-		cardChanged = true;
+		if (offset >= entry->GetLen())
+			return;
+		if (lastDoorState != rawData[offset])
+		{
+			lastDoorState = rawData[offset];
+			doorChanged = true;
+		}
 	}
 }
 
