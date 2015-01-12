@@ -3,8 +3,6 @@
 
 #include "s25fl064.h"
 
-//#include <iostream>
-
 using namespace std;
 
 namespace Spansion
@@ -120,7 +118,7 @@ namespace Spansion
 	{
 		if (!writing)
 			return 0;
-		const uint8_t command = COMMAND_RDSR;
+		static const uint8_t command = COMMAND_RDSR;
 		uint8_t *status = new uint8_t;
 		if (acc)
 			AccEnable(true);
@@ -174,11 +172,12 @@ namespace Spansion
 	uint8_t Flash::PageProgram(uint32_t address, uint8_t *data, uint32_t length)
 	{
 		uint8_t *buf = new uint8_t[4];
-		uint8_t *temp = new uint8_t[0x100];
-		uint8_t offset=address&0xff;
+		uint8_t *temp = NULL;
+		uint8_t offset = address&0xff;
 		
 		if (offset!=0)
 		{
+			temp = new uint8_t[0x100];
 			memset(temp,0xff,0x100);
 			if (length>0x100-offset)
 				memcpy(temp+offset,data,0x100-offset);
@@ -219,7 +218,7 @@ namespace Spansion
 			address+=0x100;
 		}
 		delete[] buf;
-		delete[] temp;
+		if (temp) delete[] temp;
 		return 0;
 	}
 	
