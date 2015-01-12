@@ -5,7 +5,7 @@
 #include <cstring>
 #include <map>
 #include <vector>
-#include "Driver_CAN.h" 
+#include "Driver_CAN.h"
 #include "OdEntry.h"
 #include "FastDelegate.h"
 
@@ -47,24 +47,44 @@ namespace CANExtended
 	
 	enum DeviceState
 	{
-		Bootup  				= 0x00,
-		Stopped 				= 0x04,
-		Operational 		= 0x05,
-		Preoperational 	= 0x7F
+		Bootup = 0x00,
+		Stopped = 0x04,
+		Operational = 0x05,
+		Preoperational = 0x7F
 	};
 	
 	class RxStruct
 	{
+		private:
+			uint32_t tag[2];
 		public:
 			boost::shared_ptr<OdEntry> Entry;
-			int Index;
 			
-			RxStruct(): Index(0) {}
+			RxStruct(boost::shared_ptr<OdEntry> &entry);
 			~RxStruct() {}
+			
+			void SetSegment(uint8_t segmentIndex, const uint8_t *data, uint8_t len)
+			{
+				uint8_t *rxData = Entry->GetVal().get();
+				int pos = 4+segmentIndex*7;
+				if (pos+len > Entry->GetLen())
+					return;
+				memcpy(rxData+pos, data, len);
+				tag[segmentIndex>>5] |= (1<<(segmentIndex&0x1f));
+			}
+				
+			bool IsComplete()
+			{
+				for(int i=0;i<2;++i)
+					if (tag[i]!=0xffffffffu)
+						return false;
+				return true;
+			}
+			
 			RxStruct(const RxStruct &ref)
 			{
 				Entry = ref.Entry;
-				Index = ref.Index;
+				memcpy(tag, ref.tag, 8);
 			}
 	};
 	
@@ -83,7 +103,7 @@ namespace CANExtended
 			std::map<std::uint16_t, RxStruct> rxTable;
 			std::map<std::uint16_t, boost::shared_ptr<ICanDevice> > DeviceNetwork;
 		
-			//osMutexId mutex_id;
+			osMutexId mutex_id;
 		
 			void OnResponseRecieved (std::uint16_t sourceId, boost::shared_ptr<OdEntry> &entry);
 			void OnProcessRecieved  (std::uint16_t sourceId, boost::shared_ptr<OdEntry> &entry);

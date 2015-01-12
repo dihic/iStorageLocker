@@ -7,21 +7,42 @@ using namespace std;
 
 namespace CANExtended
 {
-	//osMutexDef(CanbusMutex);
+	RxStruct::RxStruct(boost::shared_ptr<OdEntry> &entry)
+		: Entry(entry)	
+	{
+		Entry = entry;
+		uint8_t seg = (entry->GetLen() - 4) / 7;
+		uint8_t rem = (entry->GetLen() - 4) % 7;
+		if (rem!=0)
+			++seg;
+		memset(tag, 0xff, 8);
+		for(uint8_t i=0; i<seg; ++i)
+			tag[i>>5] &= ~(1<<(i&0x1f));
+	}
+	
+	osMutexDef(CanbusMutex);
 	
 	CanEx::CanEx(ARM_DRIVER_CAN &bus, uint16_t id) : canBus(bus), DeviceId(id) 
 	{
-		//mutex_id = osMutexCreate(osMutex(CanbusMutex));
+		mutex_id = osMutexCreate(osMutex(CanbusMutex));
 		canBus.Initialize(CAN_500Kbps);
 		canBus.SetRxObject(1,    id , DATA_TYPE | EXTENDED_TYPE, 0xfffu);  /* Enable reception  */
 		canBus.SetRxObject(2, 0x000 , DATA_TYPE | EXTENDED_TYPE, 0xfffu);  /* Enable reception  */
 																															
 		canBus.Start();                      /* Start controller 1                  */
+		
+//		osThreadDef_t thread_t;
+//		thread_t.pthread = MessageReceiverAdapter;
+//		thread_t.tpriority = osPriorityNormal;
+//		thread_t.instances = 1;
+//		thread_t.stacksize = 0;
+//		thread_id = osThreadCreate(&thread_t, this);
 	}
 	
 	CanEx::~CanEx()
 	{
-//		osMutexDelete(mutex_id);
+//		osThreadTerminate(thread_id);
+		osMutexDelete(mutex_id);
 	}
 
 //extern "C"
@@ -69,39 +90,40 @@ namespace CANExtended
 		{
 			msg.len = 4 + entryLen;
 			memcpy(msg.data+4, val, entryLen);
-			//osMutexWait(mutex_id, osWaitForever);
+			osMutexWait(mutex_id, osWaitForever);
 			result = canBus.Send(&msg, CAN_SEND_TIMEOUT);
 			if (result)
 				cout<<"CAN tranmit error: "<<result<<endl;
-			//osMutexRelease(mutex_id);
+			osMutexRelease(mutex_id);
 			return;
 		}
 		
 		msg.len = 8;
 		memcpy(msg.data+4, val, 4);
-		int segment = (entryLen-4) >> 3;
-		int remainder = (entryLen-4) & 7;
+		int segment   = (entryLen-4) / 7;
+		int remainder = (entryLen-4) % 7;
 		int offset = 4;
 		if (remainder != 0)
 			++segment;
-		//osMutexWait(mutex_id, osWaitForever);
+		osMutexWait(mutex_id, osWaitForever);
 		result = canBus.Send(&msg, CAN_SEND_TIMEOUT);
 		if (result)
 			cout<<"CAN tranmit error: "<<result<<endl;
-		//osMutexRelease(mutex_id);
+		osMutexRelease(mutex_id);
 		for(int i=0; i<segment; ++i)
 		{
 			msg.id = command | Command::Extended | ((DeviceId & 0xfff)<<12) | (targetId & 0xfff);
-			msg.format = EXTENDED_FORMAT;
-			msg.type = DATA_FRAME;
-			msg.len = (i < segment - 1 || remainder == 0) ? 8 : remainder;
-			memcpy(msg.data, val+offset, msg.len);
-			offset += msg.len;
-			//osMutexWait(mutex_id, osWaitForever);
+			msg.format = 1;
+			msg.type = 0;
+			msg.len = (i < segment - 1 || remainder == 0) ? 8 : remainder+1;
+			msg.data[0] = i;
+			memcpy(msg.data+1, val+offset, msg.len-1);
+			offset += msg.len-1;
+			osMutexWait(mutex_id, osWaitForever);
 			result = canBus.Send(&msg, CAN_SEND_TIMEOUT);
 			if (result)
 				cout<<"CAN tranmit error: "<<result<<endl;
-			//osMutexRelease(mutex_id);
+			osMutexRelease(mutex_id);
 		}
 	}
 	
@@ -111,12 +133,17 @@ namespace CANExtended
     if (targetId != DeviceId && targetId != 0)
 			return;
     uint16_t sourceId = (msgReceived.id >> 12) & 0xfff;
+		
+		
     uint32_t command = msgReceived.id & 0x7000000;
     bool isExt = ((msgReceived.id & Command::Extended) != 0);
 		
 		boost::shared_ptr<OdEntry> rxEntry;
 		uint8_t *rxData;
 		uint8_t rxLen;
+		
+		if (sourceId==0x121 && msgReceived.len<8)
+			sourceId &= 0xfff;
 		
 		std::map<std::uint16_t, RxStruct>::iterator it;
 		
@@ -129,9 +156,10 @@ namespace CANExtended
 				{
 					if (msgReceived.len >= 4)
 					{
-						rxEntry.reset( new OdEntry((msgReceived.data[1] << 8) | msgReceived.data[0],
-																	 msgReceived.data[2], 
-																	 msgReceived.data[3]));
+						rxEntry.reset( new OdEntry(
+							(msgReceived.data[1] << 8) | msgReceived.data[0],
+							msgReceived.data[2], 
+							msgReceived.data[3]));
 						rxLen = rxEntry->GetLen();
 						rxData = rxEntry->GetVal().get();
 						if (rxLen <= 4)
@@ -155,14 +183,12 @@ namespace CANExtended
 						else
 						{
 							memcpy(rxData, msgReceived.data+4, 4);
-							RxStruct rx;
-							rx.Entry = rxEntry;
-							rx.Index = 4;
+							RxStruct rx(rxEntry);
 							it = rxTable.find(sourceId);
 							if (it == rxTable.end())
 								rxTable.insert(pair<std::uint16_t, RxStruct>(sourceId, rx));
-							else
-								it->second = rx;
+//							else
+//								it->second = rx;
 						}
 					}
 				}
@@ -172,18 +198,10 @@ namespace CANExtended
 					if (it== rxTable.end())
 						return;
 					RxStruct &rx = it->second;
-					rxLen = rx.Entry->GetLen();
-					rxData = rx.Entry->GetVal().get();
-					if (rx.Index + msgReceived.len <= rxLen)
-						memcpy(rxData + rx.Index, msgReceived.data, msgReceived.len);
-					else
-					{
-						rxTable.erase(it);
-						return;
-					}
 					
-					rx.Index += msgReceived.len;
-					if (rx.Index >= rxLen)
+					rx.SetSegment(msgReceived.data[0], msgReceived.data+1, msgReceived.len-1);
+
+					if (rx.IsComplete())
 					{
 						switch (command)
 						{
@@ -259,16 +277,16 @@ namespace CANExtended
 		syncId &= 0xfff;
 		CAN_msg msg;
 		msg.id = Command::Sync | (DeviceId<<12) | syncId;
-		msg.format = EXTENDED_FORMAT;
-		msg.type = DATA_FRAME;
+		msg.format = 1;
+		msg.type = 0;
 		msg.len = 4;
 		msg.data[0] = index & 0xff;
 		msg.data[1] = index >> 8;
 		msg.data[2] = 0;
 		msg.data[3] = mode;
-		//osMutexWait(mutex_id, osWaitForever);
+		osMutexWait(mutex_id, osWaitForever);
 		canBus.Send(&msg, CAN_SEND_TIMEOUT);
-		//osMutexRelease(mutex_id);
+		osMutexRelease(mutex_id);
 	}
 }
 

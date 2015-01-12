@@ -39,17 +39,13 @@ namespace CANExtended
 				if (count>0)
 				{
 					val = boost::make_shared<std::uint8_t[]>(count);
+					std::memset(val.get(), 0, count);
 				}
 			}
 			
 			OdEntry(const OdEntry &entry)
 				: size(entry.size), Index(entry.Index), SubIndex(entry.SubIndex)
 			{
-//				if (entry.size>0 && entry.val.get() != NULL)
-//				{
-//					val = boost::make_shared<std::uint8_t[]>(size);
-//					std::memcpy(val.get(), entry.val.get(), size);
-//				}
 				val = entry.val;
 			}
 			
