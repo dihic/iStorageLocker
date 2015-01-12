@@ -37,8 +37,7 @@ void ReadKBLine(string line)
 
 int main()
 {
-	//HAL_Init();		/* Initialize the HAL Library    */
-	HAL_MspInit();
+	HAL_Init();		/* Initialize the HAL Library    */
 	
 	Spansion::Flash source(&Driver_SPI2, GPIOB, GPIO_PIN_12);
 	

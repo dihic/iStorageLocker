@@ -463,6 +463,21 @@
               <FileType>8</FileType>
               <FilePath>.\UsbKeyboard.cpp</FilePath>
             </File>
+            <File>
+              <FileName>CanDevice.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\CanDevice.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>StorageUnit.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\StorageUnit.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>CommStructures.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\CommStructures.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
