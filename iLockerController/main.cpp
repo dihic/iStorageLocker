@@ -14,7 +14,7 @@
 #include "UsbKeyboard.h"
 #include "UnitManager.h"
 #include "FastDelegate.h"
-
+#include "NetworkEngine.h"
 
 using namespace fastdelegate;
 using namespace IntelliStorage;
@@ -25,27 +25,29 @@ using namespace std;
 
 boost::shared_ptr<CANExtended::CanEx> CanEx;
 boost::shared_ptr<NetworkConfig> ethConfig;
+boost::shared_ptr<NetworkEngine> ethEngine;
+Spansion::Flash *nvrom;
+UnitManager unitManager;
 
 
 void SystemHeartbeat(void const *argument)
 {
-//	static uint8_t hbcount = 20;
+	static uint8_t hbcount = 20;
 	
 	HAL_GPIO_TogglePin(STATUS_PIN);
 	
-//	if (++hbcount>20 && (ethEngine.get()!=NULL))
-//	{
-//		hbcount = 0;
-// 		ethEngine->SendHeartBeat();
-//	}
+	//Send a heart beat per 10s
+	if (++hbcount>20 && (ethEngine.get()!=NULL))
+	{
+		hbcount = 0;
+ 		ethEngine->SendHeartBeat();
+	}
 	
 	CanEx->SyncAll(SYNC_DATA, CANExtended::Trigger);	//Sync data for all CAN devices
+	
+	ethEngine->InventoryRfid();
 }
 osTimerDef(TimerHB, SystemHeartbeat);
-
-Spansion::Flash *nvrom;
-
-UnitManager unitManager;
 
 void ReadKBLine(string command)
 {
@@ -113,13 +115,23 @@ void HeartbeatArrival(uint16_t sourceId, CANExtended::DeviceState state)
 		{
 			unit.reset(new StorageUnit(*CanEx, sourceId));
 			CanEx->AddDevice(unit);
-			//unit->ReadCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceReadResponse);
-			//unit->WriteCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceWriteResponse);
+			unit->ReadCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceReadResponse);
+			unit->WriteCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceWriteResponse);
 			unitManager.Add(sourceId, unit);
 		}
 		CanEx->Sync(sourceId, SYNC_LIVE, CANExtended::Trigger); //Confirm & Stop
 	}
 }
+
+static void UpdateWorker (void const *argument)  
+{
+	while(1)
+	{
+		ethConfig->Poll();
+		osThreadYield();
+	}
+}
+osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
 
 int main()
 {
@@ -142,24 +154,35 @@ int main()
 	
 	cout<<"Started..."<<endl;
 	
-	osDelay(100);
-	CanEx->SyncAll(SYNC_LIVE, CANExtended::Trigger);
-	
 	Keyboard::Init();
 	Keyboard::OnLineReadEvent.bind(&ReadKBLine);
 	
 	//Initialize Ethernet interface
   net_initialize();
 	
+	ethEngine.reset(new NetworkEngine(ethConfig->GetIpConfig(IpConfigGetServiceEnpoint), unitManager.GetList()));
+	ethConfig->ServiceEndpointChangedEvent.bind(ethEngine.get(),&NetworkEngine::ChangeServiceEndpoint);
+	
+#ifdef DEBUG_PRINT
 	cout<<"LAN SPI Speed: "<<Driver_SPI1.Control(ARM_SPI_GET_BUS_SPEED, 0)<<endl;
+	cout<<"Ethernet Inited"<<endl;
+#endif
+
+	//Start to find unit devices
+	CanEx->SyncAll(SYNC_LIVE, CANExtended::Trigger);
 	
 	//Initialize system heatbeat
 	osTimerId id = osTimerCreate(osTimer(TimerHB), osTimerPeriodic, NULL);
   osTimerStart(id, 500); 
 	
-	while(1) 
+	osThreadCreate(osThread(UpdateWorker), NULL);
+	
+  while(1) 
 	{
 		net_main();
+		CanEx->Poll();
+		net_main();
+    ethEngine->Process();
     osThreadYield();
   }
 }

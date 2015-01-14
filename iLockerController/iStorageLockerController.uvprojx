@@ -483,6 +483,16 @@
               <FileType>8</FileType>
               <FilePath>.\UnitManager.cpp</FilePath>
             </File>
+            <File>
+              <FileName>NetworkEngine.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\NetworkEngine.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>TcpClient.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\TcpClient.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
