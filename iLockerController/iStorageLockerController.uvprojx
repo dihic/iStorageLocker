@@ -478,6 +478,11 @@
               <FileType>8</FileType>
               <FilePath>.\CommStructures.cpp</FilePath>
             </File>
+            <File>
+              <FileName>UnitManager.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\UnitManager.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

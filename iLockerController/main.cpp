@@ -1,6 +1,8 @@
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <string>
+
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"                   // ARM::CMSIS:RTOS:Keil RTX
 #include "rl_net.h"                     // Keil.MDK-Pro::Network:CORE
@@ -10,8 +12,9 @@
 #include "NetworkConfig.h"
 #include "s25fl064.h"
 #include "UsbKeyboard.h"
-#include "StorageUnit.h"
+#include "UnitManager.h"
 #include "FastDelegate.h"
+
 
 using namespace fastdelegate;
 using namespace IntelliStorage;
@@ -42,12 +45,62 @@ osTimerDef(TimerHB, SystemHeartbeat);
 
 Spansion::Flash *nvrom;
 
-void ReadKBLine(string line)
-{
-	cout<<line<<endl;
-}
+UnitManager unitManager;
 
-map<std::uint16_t, boost::shared_ptr<StorageUnit> > UnitList;
+void ReadKBLine(string command)
+{
+	static uint8_t CommandState = 0;
+	boost::shared_ptr<StorageUnit> unit;
+	cout<<command<<endl;
+	switch (CommandState)
+	{
+		case 0:
+			if (command == "MAN PUT")
+			{
+				CommandState = 1;
+			}
+			else if (command.find("MAN OPEN") == 0)
+			{
+				if (command.length() == 8)
+				{
+					unit = unitManager.FindEmptyUnit();
+					if (unit.get()!=NULL)
+					{
+						unit->SetNotice(1);
+						unit->OpenDoor();
+					}
+				}
+				else
+				{
+					command.erase(0, 8);
+					uint16_t id = atoi(command.c_str()) | 0x0100;
+					unit = unitManager.FindUnit(id);
+					if (unit.get()!=NULL)
+						unit->OpenDoor();
+				}
+			}
+			else
+			{
+				unit = unitManager.FindUnit(command);
+				if (unit.get()!=NULL)
+				{
+					unit->SetNotice(1);
+					unit->OpenDoor();
+				}
+			}
+			break;
+		case 1:
+			unit = unitManager.FindEmptyUnit();
+			if (unit.get()!=NULL)
+			{
+				unit->GetPresId() = command;
+				unit->SetNotice(1);
+				unit->OpenDoor();
+			}
+			CommandState = 0;
+			break;
+	}
+}
 
 void HeartbeatArrival(uint16_t sourceId, CANExtended::DeviceState state)
 {
@@ -55,14 +108,14 @@ void HeartbeatArrival(uint16_t sourceId, CANExtended::DeviceState state)
 		return;
 	if (sourceId & 0x100)
 	{
-		map<std::uint16_t, boost::shared_ptr<StorageUnit> >::iterator it = UnitList.find(sourceId);
-		if (it == UnitList.end())
+		boost::shared_ptr<StorageUnit> unit = unitManager.FindUnit(sourceId);
+		if (unit.get() == NULL)
 		{
-			boost::shared_ptr<StorageUnit> unit(new StorageUnit(*CanEx, sourceId));
+			unit.reset(new StorageUnit(*CanEx, sourceId));
 			CanEx->AddDevice(unit);
 			//unit->ReadCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceReadResponse);
 			//unit->WriteCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceWriteResponse);
-			UnitList[sourceId] = unit;
+			unitManager.Add(sourceId, unit);
 		}
 		CanEx->Sync(sourceId, SYNC_LIVE, CANExtended::Trigger); //Confirm & Stop
 	}

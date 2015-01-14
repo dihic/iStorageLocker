@@ -1,5 +1,5 @@
-#ifndef _STORAGE_UINT_H
-#define _STORAGE_UINT_H
+#ifndef _STORAGE_UNIT_H
+#define _STORAGE_UNIT_H
 
 #include <string>
 #include "Guid.h"
@@ -43,6 +43,11 @@ namespace IntelliStorage
 				WriteAttribute(DeviceAttribute::ControlLED, data, 1);
 			}
 			
+			bool IsEmpty()
+			{
+				return (card.get()==NULL||card->PresId.empty());
+			}
+			
 			void OpenDoor()
 			{
 				boost::shared_ptr<std::uint8_t[]> data = boost::make_shared<std::uint8_t[]>(1);
@@ -63,7 +68,7 @@ namespace IntelliStorage
 			
 			void UpdateCard();
 			
-			const std::string &GetPresId() { return card->PresId; }
+			std::string &GetPresId() { return card->PresId; }
 			
 			virtual void ProcessRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> entry);
 	};
