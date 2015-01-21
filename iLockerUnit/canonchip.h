@@ -95,6 +95,9 @@ typedef struct _CAN_ODENTRY {
   uint16_t index;
   uint8_t  subindex;
   uint8_t  entrytype_len;
+	uint8_t  seg;
+	uint8_t  rem;
+	uint32_t tag[2];
   uint8_t  *val;
 }CAN_ODENTRY;
 

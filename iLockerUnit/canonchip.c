@@ -106,6 +106,7 @@ void CAN_rx(uint8_t msg_obj_num)
 	static uint8_t rxIndex = 0;
   uint32_t command;
 	uint16_t sourceId;
+	int i;
 	
 	CAN_MSG_OBJ *msg = msg_objs+msg_obj_num;
 	msgSignals |= 1<<msg_obj_num;
@@ -127,6 +128,8 @@ void CAN_rx(uint8_t msg_obj_num)
 				rxEntry.entrytype_len =  msg->data[3];
 				if (rxEntry.entrytype_len <= 4)
 				{
+					rxEntry.seg = 0;
+					rxEntry.rem = 0;
 					memcpy(rxEntry.val,msg->data+4,rxEntry.entrytype_len);
 					SystemEvent(sourceId,&rxEntry);
 					if (CANEXReceiverEvent)
@@ -134,15 +137,25 @@ void CAN_rx(uint8_t msg_obj_num)
 				}
 				else
 				{
+					rxEntry.seg = (rxEntry.entrytype_len-4) / 7;
+					rxEntry.rem = (rxEntry.entrytype_len-4) % 7;
+					if (rxEntry.rem != 0)
+						++rxEntry.seg;
+					memset(rxEntry.tag, 0xff, 8);
+					for(i=0; i<rxEntry.seg; ++i)
+						rxEntry.tag[i>>5] &= ~(1<<(i&0x1f));
 					memcpy(rxEntry.val,msg->data+4,4);
 					rxIndex = 4;
 				}
 			}
 			break;
 		case COMMAND_REQUEST | COMMAND_EXTENDED:
-			memcpy(rxEntry.val+rxIndex,msg->data,msg->dlc);
-			rxIndex+=msg->dlc;
+			rxEntry.tag[msg->data[0]>>5] |= (1<<(msg->data[0]&0x1f));
+			rxIndex = 4 + msg->data[0]*7;
 			if (rxIndex>=rxEntry.entrytype_len)
+				break;
+			memcpy(rxEntry.val+rxIndex, msg->data+1, msg->dlc-1);
+			if (rxEntry.tag[0]==0xffffffffu && rxEntry.tag[1]==0xffffffffu)
 			{
 				SystemEvent(sourceId,&rxEntry);
 				if (CANEXReceiverEvent)
@@ -328,8 +341,8 @@ void CANTransmit(uint32_t command,uint16_t targetId,CAN_ODENTRY *entry,uint16_t 
 	memcpy(msg.data+4, entry->val, 4);
 	CANSend(&msg);
 	
-	segment 	= (entry->entrytype_len-4) >> 3;
-	remainder = (entry->entrytype_len-4) & 0x7;
+	segment 	= (entry->entrytype_len-4) / 7;
+	remainder = (entry->entrytype_len-4) % 7;
 	offset=4;
 	if (remainder!=0)
 		segment++;
@@ -337,10 +350,11 @@ void CANTransmit(uint32_t command,uint16_t targetId,CAN_ODENTRY *entry,uint16_t 
 	for(i=0; i<segment; ++i)
 	{
 		msg.mode_id = CAN_MSGOBJ_EXT | command | COMMAND_EXTENDED | NodeId<<12 | targetId;
-		msg.dlc = (i<segment-1 || remainder==0) ? 8 : remainder;
-		memcpy(msg.data, entry->val+offset, msg.dlc);
+		msg.dlc = (i<segment-1 || remainder==0) ? 8 : remainder+1;
+		msg.data[0] = i;
+		memcpy(msg.data+1, entry->val+offset, msg.dlc-1);
 		CANSend(&msg);
-		offset += msg.dlc;
+		offset += msg.dlc-1;
 	}
 }
 
