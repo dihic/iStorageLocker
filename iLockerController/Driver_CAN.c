@@ -21,7 +21,7 @@ osMailQId MBX_tx_ctrl[CAN_CTRL_MAX_NUM];
 osMailQId MBX_rx_ctrl[CAN_CTRL_MAX_NUM];
 
 /* Semaphores used for protecting writing to CAN hardware                    */
-//osSemaphoreId wr_sem[CAN_CTRL_MAX_NUM];
+osSemaphoreId wr_sem[CAN_CTRL_MAX_NUM];
 
 #if (RTE_CAN1 == 1)
 	osSemaphoreDef(CAN_SEMA1);
@@ -96,25 +96,25 @@ CAN_ERROR CAN_init (U32 ctrl, U32 baudrate)  {
 		{
 	#if CAN_CTRL_MAX_NUM>0
 			case 1:
-				//wr_sem[ctrl0] = osSemaphoreCreate(osSemaphore(CAN_SEMA1), 1);
+				wr_sem[ctrl0] = osSemaphoreCreate(osSemaphore(CAN_SEMA1), 1);
 				MBX_tx_ctrl[ctrl0] = osMailCreate(osMailQ(MBX_TX1), NULL);
 				MBX_rx_ctrl[ctrl0] = osMailCreate(osMailQ(MBX_RX1), NULL);
 				break;
 	#if CAN_CTRL_MAX_NUM>1
 			case 2:
-				//wr_sem[ctrl0] = osSemaphoreCreate(osSemaphore(CAN_SEMA2), 1);
+				wr_sem[ctrl0] = osSemaphoreCreate(osSemaphore(CAN_SEMA2), 1);
 				MBX_tx_ctrl[ctrl0] = osMailCreate(osMailQ(MBX_TX2), NULL);
 				MBX_rx_ctrl[ctrl0] = osMailCreate(osMailQ(MBX_RX2), NULL);
 				break;
 	#if CAN_CTRL_MAX_NUM>2
 			case 3:
-				//wr_sem[ctrl0] = osSemaphoreCreate(osSemaphore(CAN_SEMA3), 1);
+				wr_sem[ctrl0] = osSemaphoreCreate(osSemaphore(CAN_SEMA3), 1);
 				MBX_tx_ctrl[ctrl0] = osMailCreate(osMailQ(MBX_TX3), NULL);
 				MBX_rx_ctrl[ctrl0] = osMailCreate(osMailQ(MBX_RX3), NULL);
 				break;
 	#if CAN_CTRL_MAX_NUM>3
 			case 4:
-				//wr_sem[ctrl0] = osSemaphoreCreate(osSemaphore(CAN_SEMA4), 1);
+				wr_sem[ctrl0] = osSemaphoreCreate(osSemaphore(CAN_SEMA4), 1);
 				MBX_tx_ctrl[ctrl0] = osMailCreate(osMailQ(MBX_TX4), NULL);
 				MBX_rx_ctrl[ctrl0] = osMailCreate(osMailQ(MBX_RX4), NULL);
 				break;
@@ -126,10 +126,10 @@ CAN_ERROR CAN_init (U32 ctrl, U32 baudrate)  {
 				break;
 		}
 	}
-	
-  error_code = _CAN_hw_setup(ctrl);
-  if (error_code != CAN_OK) 
-    return error_code;
+
+//  error_code = _CAN_hw_setup(ctrl);
+//  if (error_code != CAN_OK) 
+//    return error_code;
 
   return (CAN_hw_init (ctrl, baudrate));
 }
@@ -144,9 +144,9 @@ CAN_ERROR CAN_init (U32 ctrl, U32 baudrate)  {
  *  Return:     CAN_ERROR:  Error code
  *---------------------------------------------------------------------------*/
 
-CAN_ERROR CAN_start (U32 ctrl)  {
-  return (CAN_hw_start (ctrl));
-}
+//CAN_ERROR CAN_start (U32 ctrl)  {
+//  return (CAN_hw_start (ctrl));
+//}
 
 
 /*--------------------------- CAN_push --------------------------------------
@@ -166,8 +166,12 @@ CAN_ERROR CAN_push (U32 ctrl, CAN_msg *msg, U16 timeout)  {
 	osEvent event;
   U32 ctrl0 = ctrl-1;                 /* Controller index 0 .. x-1           */
 
-  if (CAN_hw_wr(ctrl, msg) == CAN_TX_BUSY_ERROR)  /* Transmit hardware free for send */ 
-	{																								/* If hardware for sending is busy */
+  if (CAN_hw_tx_empty (ctrl) == CAN_OK)  /* Transmit hardware free for send */
+	{
+    CAN_hw_wr (ctrl, msg);            /* Send message                        */
+  }
+  else                               /* If hardware for sending is busy     */
+	{
     /* Write the message to send mailbox if there is room for it             */
     ptrmsg = (CAN_msg *)osMailAlloc(MBX_tx_ctrl[ctrl0], timeout);
     if (ptrmsg == NULL) 
@@ -177,18 +181,46 @@ CAN_ERROR CAN_push (U32 ctrl, CAN_msg *msg, U16 timeout)  {
 		osMailPut(MBX_tx_ctrl[ctrl0], ptrmsg);
 		
 		/* Check once again if transmit hardware is ready for transmission   */
-		if (CAN_hw_tx_empty(ctrl) == CAN_OK)  /* Transmit hw free for send */ 
+		if (CAN_hw_tx_empty (ctrl) == CAN_OK)  /* Transmit hw free for send */ 
 		{
 			event = osMailGet (MBX_tx_ctrl[ctrl0], 0);
 			if (event.status != osEventMail) 
 			{
-				//osSemaphoreRelease(wr_sem[ctrl0]); /* Return a token back to semaphore  */
+				osSemaphoreRelease(wr_sem[ctrl0]); /* Return a token back to semaphore  */
 				return CAN_OK;              			 /* Message was sent from IRQ already */
 			}
 			ptrmsg = (CAN_msg *)event.value.p;
 			osMailFree (MBX_tx_ctrl[ctrl0], ptrmsg);
-			CAN_hw_wr(ctrl, msg);      /* Send message                        */
+			CAN_hw_wr (ctrl, msg);      /* Send message                        */
 		}
+		
+//		/* If message hasn't been sent but timeout expired, deallocate memory  */
+//		if (osMailPut(MBX_tx_ctrl[ctrl0], ptrmsg) != osOK) 
+//		{
+//			if (osMailFree (MBX_tx_ctrl[ctrl0], ptrmsg) != osOK)
+//				return CAN_DEALLOC_MEM_ERROR;
+//			return CAN_ALLOC_MEM_ERROR;
+//		} 
+//		else 
+//		{
+//			/* Check once again if transmit hardware is ready for transmission   */
+//			if (CAN_hw_tx_empty (ctrl) == CAN_OK)  /* Transmit hw free for send */ 
+//			{
+//				event = osMailGet (MBX_tx_ctrl[ctrl0], 0);
+//				if (event.status != osEventMail) 
+//				{
+//					osSemaphoreRelease(wr_sem[ctrl0]); /* Return a token back to semaphore  */
+//					return CAN_OK;              			 /* Message was sent from IRQ already */
+//				}
+//				ptrmsg = (CAN_msg *)event.value.p;
+//				if (osMailFree (MBX_tx_ctrl[ctrl0], ptrmsg) != osOK) 
+//				{
+//					osSemaphoreRelease(wr_sem[ctrl0]); /* Return a token back to semaphore  */
+//					return CAN_DEALLOC_MEM_ERROR;
+//				}
+//				CAN_hw_wr (ctrl, msg);      /* Send message                        */
+//			}
+//		}
   }
   return CAN_OK;
 }
@@ -249,7 +281,7 @@ CAN_ERROR CAN_set (U32 ctrl, CAN_msg *msg, U16 timeout)  {
   do {
     if (CAN_hw_tx_empty (ctrl) == CAN_OK)  {  /* Transmit hardware free      */
       error_code = CAN_hw_set (ctrl, msg);    /* Set message                 */
-      //osSemaphoreRelease (wr_sem[ctrl-1]);     /* Return a token back to semaphore  */
+      osSemaphoreRelease (wr_sem[ctrl-1]);     /* Return a token back to semaphore  */
       return error_code;
     }
     if (timeout == 0xffff)              /* Indefinite wait                   */
@@ -274,8 +306,7 @@ CAN_ERROR CAN_set (U32 ctrl, CAN_msg *msg, U16 timeout)  {
  *---------------------------------------------------------------------------*/
 
 
-CAN_ERROR CAN_pull (U32 ctrl, CAN_msg *msg, U16 timeout)  
-{
+CAN_ERROR CAN_pull (U32 ctrl, CAN_msg *msg, U16 timeout)  {
   CAN_msg *ptrmsg;
   U32 ctrl0 = ctrl-1;                 /* Controller index 0 .. x-1           */
 	//printf("Canbus mail get started!\n");
@@ -300,6 +331,59 @@ CAN_ERROR CAN_pull (U32 ctrl, CAN_msg *msg, U16 timeout)
 
   return CAN_OK;
 }
+
+
+/*--------------------------- CAN_receive -----------------------------------
+ *
+ *  Read received message, see CAN_pull function comment
+ *
+ *  Parameter:  ctrl:       Index of the hardware CAN controller (1 .. x)
+ *              msg:        Pointer where CAN message will be read
+ *              timeout:    Timeout value for message receiving
+ *
+ *  Return:     CAN_ERROR:  Error code
+ *---------------------------------------------------------------------------*/
+
+//CAN_ERROR CAN_receive (U32 ctrl, CAN_msg *msg, U16 timeout)  {
+//  return (CAN_pull (ctrl, msg, timeout));
+//}
+
+
+/*--------------------------- CAN_rx_object ---------------------------------
+ *
+ *  Enable reception of messages on specified controller and channel with 
+ *  specified identifier
+ *
+ *  Parameter:  ctrl:       Index of the hardware CAN controller (1 .. x)
+ *              ch:         Channel for the message transmission
+ *              id:         CAN message identifier
+ *              object_para:Object parameters (standard or extended format, 
+ *                          data or remote frame)
+ *
+ *  Return:     CAN_ERROR:  Error code
+ *---------------------------------------------------------------------------*/
+
+//CAN_ERROR CAN_rx_object (U32 ctrl, U32 ch, U32 id, U32 object_para)  {
+//  return (CAN_hw_rx_object (ctrl, ch, id, object_para));
+//}
+
+
+/*--------------------------- CAN_tx_object ---------------------------------
+ *
+ *  Enable transmission of messages on specified controller and channel with 
+ *  specified identifier
+ *
+ *  Parameter:  ctrl:       Index of the hardware CAN controller (1 .. x)
+ *              ch:         Channel for the message transmission
+ *              object_para:Object parameters (standard or extended format, 
+ *                          data or remote frame)
+ *
+ *  Return:     CAN_ERROR:  Error code
+ *---------------------------------------------------------------------------*/
+
+//CAN_ERROR CAN_tx_object (U32 ctrl, U32 ch, U32 object_para)  {
+//  return (CAN_hw_tx_object (ctrl, ch, object_para));
+//}
 
 /*----------------------------------------------------------------------------
  * end of file

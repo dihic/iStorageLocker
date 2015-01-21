@@ -25,7 +25,7 @@
 
 
 #if    (!RTE_CAN1 && !RTE_CAN2)
-#error "CAN not configured in RTE_Device.h!"
+#error "CAN not configured in CanConfig.h!"
 #endif
 
 /*----------------------------------------------------------------------------
@@ -82,58 +82,59 @@ static ARM_DRIVER_VERSION CANX_GetVersion (void) {
 
 /*************************** Module Functions ********************************/
 
-/*--------------------------- CAN_hw_setup ----------------------------------
- *
- *  Setup CAN transmit and receive PINs and interrupt vectors
- *
- *  Parameter:  ctrl:       Index of the hardware CAN controller (1 .. x)
- *
- *  Return:     CAN_ERROR:  Error code
- *---------------------------------------------------------------------------*/
-
-CAN_ERROR CAN_hw_setup (U32 ctrl)  
+void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
 {
-	GPIO_InitTypeDef gpioType = { GPIO_PIN_All, 
-																GPIO_MODE_AF_PP,
-																GPIO_PULLUP,
-																GPIO_SPEED_LOW,
-																GPIO_AF9_CAN1 };
-	__CAN1_CLK_ENABLE();
-	switch (ctrl)
-	{
-#if RTE_CAN1 == 1
-		case __CTRL1:
-			hCAN1.Instance = CAN1;
-			hCAN1.pRxMsg = &canRxMsg1;
-			hCAN1.pTxMsg = &canTxMsg1;
-			if (RTE_CAN1_RX_PORT==GPIOB || RTE_CAN1_TX_PORT==GPIOB)
-				__GPIOB_CLK_ENABLE();
-			if (RTE_CAN1_RX_PORT==GPIOD || RTE_CAN1_TX_PORT==GPIOD)
-				__GPIOD_CLK_ENABLE();
-			gpioType.Pin = 1<<RTE_CAN1_RX_BIT;
-			HAL_GPIO_Init(RTE_CAN1_RX_PORT, &gpioType);
-			gpioType.Pin = 1<<RTE_CAN1_TX_BIT;
-			HAL_GPIO_Init(RTE_CAN1_TX_PORT, &gpioType);
-			break;
-#endif
-#if RTE_CAN2 == 1
-		case __CTRL2:
-			__CAN2_CLK_ENABLE();
-			hCAN2.Instance = CAN2;
-			hCAN2.pRxMsg = &canRxMsg2;
-			hCAN2.pTxMsg = &canTxMsg2;
-			if (RTE_CAN2_RX_PORT==GPIOB || RTE_CAN2_TX_PORT==GPIOB)
-				__GPIOB_CLK_ENABLE();
-			gpioType.Pin = 1<<RTE_CAN2_RX_BIT;
-			HAL_GPIO_Init(RTE_CAN2_RX_PORT, &gpioType);
-			gpioType.Pin = 1<<RTE_CAN1_TX_BIT;
-			HAL_GPIO_Init(RTE_CAN2_TX_PORT, &gpioType);
-		break;
-#endif
-		default:
-			return CAN_UNEXIST_CTRL_ERROR;
-	}
-	return CAN_OK;
+  GPIO_InitTypeDef GPIO_InitStruct;
+  if(hcan->Instance==CAN1)
+  {
+    /* Peripheral clock enable */
+    __CAN1_CLK_ENABLE();
+		
+		hcan->pRxMsg = &canRxMsg1;
+		hcan->pTxMsg = &canTxMsg1;
+		hcan->Instance->MCR &= (~(uint32_t)CAN_MCR_DBF);
+		
+		if (RTE_CAN1_RX_PORT==GPIOB || RTE_CAN1_TX_PORT==GPIOB)
+			__GPIOB_CLK_ENABLE();
+		if (RTE_CAN1_RX_PORT==GPIOD || RTE_CAN1_TX_PORT==GPIOD)
+			__GPIOD_CLK_ENABLE();
+  
+		GPIO_InitStruct.Pin = 1<<RTE_CAN1_RX_BIT;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF9_CAN1;
+    HAL_GPIO_Init(RTE_CAN1_RX_PORT, &GPIO_InitStruct);
+		GPIO_InitStruct.Pin = 1<<RTE_CAN1_TX_BIT;
+		HAL_GPIO_Init(RTE_CAN1_TX_PORT, &GPIO_InitStruct);
+
+  /* System interrupt init*/
+    HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
+    HAL_NVIC_SetPriority(CAN1_TX_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
+    HAL_NVIC_SetPriority(CAN1_SCE_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(CAN1_SCE_IRQn);
+  }
+}
+
+void HAL_CAN_MspDeInit(CAN_HandleTypeDef* hcan)
+{
+  if(hcan->Instance==CAN1)
+  {
+    /* Peripheral clock disable */
+    __CAN1_CLK_DISABLE();
+  
+		HAL_GPIO_DeInit(RTE_CAN1_RX_PORT, 1<<RTE_CAN1_RX_BIT);
+		HAL_GPIO_DeInit(RTE_CAN1_TX_PORT, 1<<RTE_CAN1_TX_BIT);
+
+    /* Peripheral interrupt DeInit*/
+		HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
+    HAL_NVIC_DisableIRQ(CAN1_RX1_IRQn);
+    HAL_NVIC_DisableIRQ(CAN1_TX_IRQn);
+    HAL_NVIC_DisableIRQ(CAN1_SCE_IRQn);
+  }
+
 }
 
 /*--------------------------- CAN_hw_init -----------------------------------
@@ -154,11 +155,13 @@ CAN_ERROR CAN_hw_init (U32 ctrl, U32 baudrate)
 #if RTE_CAN1 == 1
 		case __CTRL1:
 			hCAN = &hCAN1;
+			hCAN->Instance = CAN1;
 			break;
 #endif
 #if RTE_CAN2 == 1
 		case __CTRL2:
 			hCAN= &hCan2;
+			hCAN->Instance = CAN2;
 			break;
 #endif
 		default:
@@ -166,7 +169,7 @@ CAN_ERROR CAN_hw_init (U32 ctrl, U32 baudrate)
 	}
 	
 	hCAN->Init.Mode = CAN_MODE_NORMAL;
-	
+	//hCAN->Init.Mode = CAN_MODE_SILENT_LOOPBACK;
 	hCAN->Init.TXFP = ENABLE;
 	hCAN->Init.NART = DISABLE;
 	hCAN->Init.ABOM = DISABLE;
@@ -179,13 +182,17 @@ CAN_ERROR CAN_hw_init (U32 ctrl, U32 baudrate)
 	else
 		return CAN_BAUDRATE_ERROR;
 	
+//	hCAN->Init.BS1 = CAN_BS1_12TQ;
+//	hCAN->Init.BS2 = CAN_BS2_2TQ;
+//	hCAN->Init.SJW = CAN_SJW_1TQ;
+	
 	hCAN->Init.BS1 = CAN_BS1_4TQ;
 	hCAN->Init.BS2 = CAN_BS2_2TQ;
 	hCAN->Init.SJW = CAN_SJW_3TQ;
-	
+
 	if (HAL_CAN_Init(hCAN) != HAL_OK)
 		return CAN_INIT_ERROR;
-
+	
 	return CAN_OK;
 }
 
@@ -218,8 +225,8 @@ CAN_ERROR CAN_hw_start (U32 ctrl)
 	}
 	if (hCAN->State==HAL_CAN_STATE_ERROR | hCAN->State == HAL_CAN_STATE_RESET)
 		return CAN_INIT_ERROR;
-	HAL_CAN_Receive_IT(hCAN, CAN_FIFO0);
 	
+	HAL_CAN_Receive_IT(hCAN, CAN_FIFO0);
   return CAN_OK;
 }
 
@@ -234,7 +241,22 @@ CAN_ERROR CAN_hw_start (U32 ctrl)
  *---------------------------------------------------------------------------*/
 
 //CAN_ERROR CAN_hw_testmode (U32 ctrl, U32 testmode) {
-//  CAN_TypeDef *CANx = CAN_CTRL[ctrl-1];
+//  CAN_HandleTypeDef *hCAN;
+//	switch (ctrl)
+//	{
+//#if RTE_CAN1 == 1
+//		case __CTRL1:
+//			hCAN = &hCAN1;
+//			break;
+//#endif
+//#if RTE_CAN2 == 1
+//		case __CTRL2:
+//			hCAN= &hCan2;
+//			break;
+//#endif
+//		default:
+//			return CAN_UNEXIST_CTRL_ERROR;
+//	}
 
 //  CANx->BTR &= ~(CAN_BTR_LBKM | CAN_BTR_SILM); 
 //  CANx->BTR |=  (testmode & (CAN_BTR_LBKM | CAN_BTR_SILM));
@@ -255,24 +277,32 @@ CAN_ERROR CAN_hw_tx_empty (U32 ctrl)
 {
 	HAL_CAN_StateTypeDef state;
   CAN_HandleTypeDef *hCAN;
-	switch (ctrl)
+	
+	int av = osSemaphoreWait(wr_sem[ctrl-1], 0);
+	
+  if (av >0)
 	{
-#if RTE_CAN1 == 1
-		case __CTRL1:
-			hCAN = &hCAN1;
-			break;
-#endif
-#if RTE_CAN2 == 1
-		case __CTRL2:
-			hCAN= &hCan2;
-			break;
-#endif
-		default:
-			return CAN_UNEXIST_CTRL_ERROR;
+		switch (ctrl)
+		{
+	#if RTE_CAN1 == 1
+			case __CTRL1:
+				hCAN = &hCAN1;
+				break;
+	#endif
+	#if RTE_CAN2 == 1
+			case __CTRL2:
+				hCAN= &hCan2;
+				break;
+	#endif
+			default:
+				return CAN_UNEXIST_CTRL_ERROR;
+		}
+		state = HAL_CAN_GetState(hCAN);
+		if((state == HAL_CAN_STATE_READY) || (state == HAL_CAN_STATE_BUSY_RX))
+			return CAN_OK;
+		else 
+			osSemaphoreRelease(wr_sem[ctrl-1]);    /* Return a token back to semaphore    */
 	}
-	state = HAL_CAN_GetState(hCAN);
-	if((state == HAL_CAN_STATE_READY) || (state == HAL_CAN_STATE_BUSY_RX))
-		return CAN_OK;
 
   return CAN_TX_BUSY_ERROR;
 }
@@ -288,6 +318,8 @@ CAN_ERROR CAN_hw_tx_empty (U32 ctrl)
  *---------------------------------------------------------------------------*/
 
 CAN_ERROR CAN_hw_wr (U32 ctrl, CAN_msg *msg)  {
+	uint8_t i;
+	
   CAN_HandleTypeDef *hCAN;
 	switch (ctrl)
 	{
@@ -305,8 +337,9 @@ CAN_ERROR CAN_hw_wr (U32 ctrl, CAN_msg *msg)  {
 			return CAN_UNEXIST_CTRL_ERROR;
 	}
 	
-	memcpy(hCAN->pTxMsg->Data, msg->data, 8);
 	hCAN->pTxMsg->DLC = msg->len;
+	for(i=0;i<msg->len;++i)
+		hCAN->pTxMsg->Data[i] = msg->data[i];
 	hCAN->pTxMsg->RTR = (msg->type == REMOTE_FRAME) ? CAN_RTR_REMOTE : CAN_RTR_DATA;
 	if (msg->format==EXTENDED_FORMAT)
 	{
@@ -360,7 +393,7 @@ U8 CAN_hw_rx_object_chk(U16 bank, U32 object_para)
 	/* check if another identifier is possible */
 	if ((CAN1->FS1R & (1UL << bank)) == 0)		/* 16-bit identifier format is used */
 	{
-		if ((object_para & FILTER_TYPE) == MASK_TYPE && (CAN1->FM1R & (1UL << bank)) == 0)	//Mask mode
+		if ((object_para & FILTER_LIST_TYPE) == 0 && (CAN1->FM1R & (1UL << bank)) == 0)	//Mask mode
 		{
 			if (CAN1->sFilterRegister[bank].FR1 == 0)				/* check if position n is used */
 				return 0;
@@ -369,7 +402,7 @@ U8 CAN_hw_rx_object_chk(U16 bank, U32 object_para)
 			else
 				return 0xff;
 		}
-		if ((object_para & FILTER_TYPE) == LIST_TYPE && (CAN1->FM1R & (1UL << bank)) != 0)	//List mode
+		if ((object_para & FILTER_LIST_TYPE) != 0 && (CAN1->FM1R & (1UL << bank)) != 0)	//List mode
 		{
 			if ((CAN1->sFilterRegister[bank].FR1 & 0x0000FFFF) == 0)		/* check if position n is used */
 				return 0;
@@ -385,11 +418,11 @@ U8 CAN_hw_rx_object_chk(U16 bank, U32 object_para)
 	}
 	else		/* 32-bit identifier format is used */
 	{
-		if ((object_para & FILTER_TYPE) == MASK_TYPE && (CAN1->FM1R & (1UL << bank)) == 0)	//Mask mode
+		if ((object_para & FILTER_LIST_TYPE) == 0 && (CAN1->FM1R & (1UL << bank)) == 0)	//Mask mode
 		{
 			return 0xff;
 		}
-		if ((object_para & FILTER_TYPE) == LIST_TYPE && (CAN1->FM1R & (1UL << bank)) != 0)	//List mode
+		if ((object_para & FILTER_LIST_TYPE) != 0 && (CAN1->FM1R & (1UL << bank)) != 0)	//List mode
 		{
 			if (CAN1->sFilterRegister[bank].FR1 == 0)				/* check if position n is used */
 				return 0;
@@ -590,6 +623,11 @@ void HAL_CAN_TxCpltCallback(CAN_HandleTypeDef* hcan)
       CAN_hw_wr(__CTRL1, ptrmsg);
 			osMailFree(MBX_tx_ctrl[__CTRL1-1], ptrmsg);
     }
+		else
+		{
+			osSemaphoreRelease(wr_sem[__CTRL1-1]);
+			hcan->Instance->IER &= ~CAN_IER_TMEIE;             /* disable  TME interrupt */ 
+		}
 		return;
 	}
 #endif
@@ -603,12 +641,18 @@ void HAL_CAN_TxCpltCallback(CAN_HandleTypeDef* hcan)
       CAN_hw_wr(__CTRL2, ptrmsg);
 			osMailFree(MBX_tx_ctrl[__CTRL2-1], ptrmsg);
     }
+		else
+		{
+			osSemaphoreRelease(wr_sem[__CTRL2-1]);
+			hcan->Instance->IER &= ~CAN_IER_TMEIE;             /* disable  TME interrupt */ 
+		}
 	}
 #endif
 }
 
 void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan)
 {
+	uint8_t i;
 	CAN_msg *ptrmsg;
 	int ctrl0 = -1;
 #if (RTE_CAN1 == 1)
@@ -623,8 +667,10 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan)
 	ptrmsg = (CAN_msg *)osMailAlloc(MBX_rx_ctrl[ctrl0], 0);
 	if (ptrmsg) 
 	{
-		memcpy(ptrmsg->data, hcan->pRxMsg->Data, 8);
 		ptrmsg->len = hcan->pRxMsg->DLC;
+		for(i=0;i<ptrmsg->len;++i)
+			ptrmsg->data[i] = hcan->pRxMsg->Data[i];
+		
 		ptrmsg->type = (hcan->pRxMsg->RTR == CAN_RTR_REMOTE) ? REMOTE_FRAME : DATA_FRAME;
 		if (hcan->pRxMsg->IDE == CAN_ID_EXT)
 		{
@@ -642,6 +688,51 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan)
 }
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
 {
+	int ctrl0 = -1;
+#if (RTE_CAN1 == 1)
+	if (hcan == &hCAN1)
+		ctrl0 = __CTRL1-1;
+#endif
+#if (RTE_CAN2 == 1)
+	if (hcan == &hCAN2)
+		ctrl0 = __CTRL2-1;
+#endif
+	
+	if (hcan->Instance->TSR & CAN_TSR_TERR0)	//In transmission error
+	{
+		//Abort current transmission
+		hcan->Instance->TSR |= CAN_TSR_ABRQ0;
+		while (hcan->Instance->TSR & CAN_TSR_ABRQ0);
+		//Clear transmission request
+		hcan->Instance->TSR |= CAN_TSR_RQCP0;
+		//Release resource
+		osSemaphoreRelease(wr_sem[ctrl0]);
+		hcan->Instance->IER &= ~CAN_IER_TMEIE;             /* disable  TME interrupt */ 
+	}
+	else if (hcan->Instance->TSR & CAN_TSR_TERR1)	//In transmission error
+	{
+		//Abort current transmission
+		hcan->Instance->TSR |= CAN_TSR_ABRQ1;
+		while (hcan->Instance->TSR & CAN_TSR_ABRQ1);
+		//Clear transmission request
+		hcan->Instance->TSR |= CAN_TSR_RQCP1;
+		//Release resource
+		osSemaphoreRelease(wr_sem[ctrl0]);
+		hcan->Instance->IER &= ~CAN_IER_TMEIE;             /* disable  TME interrupt */ 
+	}
+	else if (hcan->Instance->TSR & CAN_TSR_TERR2)	//In transmission error
+	{
+		//Abort current transmission
+		hcan->Instance->TSR |= CAN_TSR_ABRQ2;
+		while (hcan->Instance->TSR & CAN_TSR_ABRQ2);
+		//Clear transmission request
+		hcan->Instance->TSR |= CAN_TSR_RQCP2;
+		//Release resource
+		osSemaphoreRelease(wr_sem[ctrl0]);
+		hcan->Instance->IER &= ~CAN_IER_TMEIE;             /* disable  TME interrupt */ 
+	}
+	//Clear error status
+	hcan->Instance->MSR |= CAN_MSR_ERRI;
 }
 
 #if (RTE_CAN1)
