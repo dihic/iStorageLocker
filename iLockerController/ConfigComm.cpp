@@ -33,6 +33,10 @@ inline void ConfigComm::Start()
 {
 	uart.Control(ARM_USART_CONTROL_TX, 1);
 	uart.Control(ARM_USART_CONTROL_RX, 1);
+	dataState = 0;
+	command = 0; 
+	base = 0;
+	dataOffset = data;
 }
 	
 inline void ConfigComm::Stop()
@@ -43,15 +47,14 @@ inline void ConfigComm::Stop()
 
 void ConfigComm::DataReceiver()
 {
-	static uint8_t dataState = 0;
-	static uint8_t command = 0; 
-	static uint8_t parameterLen;
-  static uint8_t parameterIndex;
-	static boost::shared_ptr<uint8_t[]> parameters;
-	
-	static uint8_t data[0x400];
-	static uint32_t base = 0;
-	static uint8_t *dataOffset = data;
+//	static uint8_t dataState = 0;
+//	static uint8_t command = 0; 
+//	static uint8_t parameterLen;
+//  static uint8_t parameterIndex;
+//	static boost::shared_ptr<uint8_t[]> parameters;
+//	
+//	static uint32_t base = 0;
+//	static uint8_t *dataOffset = data;
 	
 	ARM_USART_STATUS status = uart.GetStatus();
 	if (!status.rx_busy)

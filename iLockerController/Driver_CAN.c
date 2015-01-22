@@ -87,7 +87,7 @@ osSemaphoreId wr_sem[CAN_CTRL_MAX_NUM];
 CAN_ERROR CAN_init (U32 ctrl, U32 baudrate)  {
 	static U8 first_run_flag[4] = {0, 0, 0, 0};
 
-  CAN_ERROR error_code;
+  //CAN_ERROR error_code;
   U32 ctrl0 = ctrl-1;                 /* Controller index 0 .. x-1           */
 	if (first_run_flag[ctrl0]==0)
 	{

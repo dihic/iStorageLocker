@@ -17,6 +17,15 @@ class ConfigComm : public ISerialComm
 		const ARM_DRIVER_USART &uart;
 		static void SignalEventHandler(uint32_t event);
 		static const std::uint8_t dataHeader[3];
+	private:
+		uint8_t data[0x400];
+		uint8_t dataState;
+		uint8_t command; 
+		uint8_t parameterLen;
+		uint8_t parameterIndex;
+		boost::shared_ptr<uint8_t[]> parameters;
+		uint32_t base;
+	  uint8_t *dataOffset;
 	public:
 		typedef FastDelegate3<std::uint8_t, std::uint8_t *, std::size_t> CommandArrivalHandler;
 		CommandArrivalHandler OnCommandArrivalEvent;
