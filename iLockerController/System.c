@@ -83,6 +83,13 @@ void IOSetup()
 	gpioType.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(GPIOC, &gpioType);
 	
+	//Configure PE2 as PowerAmp PowerDown
+	//Configure PE3 as PowerAmp Reset
+	gpioType.Pin = GPIO_PIN_2 | GPIO_PIN_3;
+	gpioType.Mode = GPIO_MODE_OUTPUT_PP;
+	gpioType.Pull = GPIO_PULLUP;
+	HAL_GPIO_Init(GPIOE, &gpioType);
+	
 	//Configure PC13 as system heartbeat
 	gpioType.Pin = GPIO_PIN_13;
 	gpioType.Mode = GPIO_MODE_OUTPUT_PP;
@@ -97,12 +104,15 @@ void IOSetup()
 	gpioType.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOC, &gpioType);
 	
-	//Reset Network
+	//Reset Network & PowerAmp
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
 	osDelay(20);
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
 	osDelay(20);	// require >10ms
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
 }
 
 void HAL_MspInit(void)
