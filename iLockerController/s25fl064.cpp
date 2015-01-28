@@ -169,6 +169,24 @@ namespace Spansion
 		return 0;
 	}
 	
+	uint8_t	Flash::ParameterSectorErase(uint16_t sector)
+	{
+		WaitForWriting();
+		uint8_t *buf = new uint8_t[4];
+		buf[0] = COMMAND_P4E;
+		buf[1] = (sector >> 4) & 0xff;
+		buf[2] = (sector & 0xf) << 4;
+		buf[3] = 0;
+		WriteAccess(true);
+		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
+		driver->Send(buf, 4);
+		SpiSync();
+		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
+		writing = true;
+		delete[] buf;
+		return 0;
+	}
+	
 	uint8_t Flash::PageProgram(uint32_t address, uint8_t *data, uint32_t length)
 	{
 		uint8_t *buf = new uint8_t[4];
@@ -216,20 +234,23 @@ namespace Spansion
 				AccEnable(false);
 			writing = true;
 			address+=0x100;
+		if (temp) delete[] temp;
 		}
 		delete[] buf;
-		if (temp) delete[] temp;
 		return 0;
 	}
 	
 	uint8_t Flash::WriteMemory(uint32_t address, uint8_t *data, uint32_t length, bool erase)
 	{
-		if (length>0x10000)
+		if (length > 0x10000)
 			return 0xff;
 		uint8_t result=0;
 		if (erase)
 		{
-			result = SectorErase(address>>16);
+			if (length >= 0x1000)
+				result = SectorErase(address>>16);
+			else
+				result = ParameterSectorErase(address>>12);
 			if (result)
 				return result;
 		}

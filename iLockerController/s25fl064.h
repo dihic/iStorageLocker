@@ -65,6 +65,7 @@ namespace Spansion
 			~Flash() {}
 			bool IsAvailable();
 			uint8_t WaitForWriting();
+			uint8_t	ParameterSectorErase(uint16_t sector);
 			uint8_t SectorErase(uint8_t sector);
 			uint8_t BulkErase();
 			void FastReadMemory(uint32_t address, uint8_t *data, uint32_t length);

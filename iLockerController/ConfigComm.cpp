@@ -3,7 +3,7 @@
 
 using namespace std;
 
-const std::uint8_t ConfigComm::dataHeader[3] = {0xfe,0xfc,0xfd};
+const std::uint8_t ConfigComm::dataHeader[5] = {0xfe, 0xfc, 0xfd, 0xfa, 0xfb};
 
 extern "C"
 {
@@ -33,7 +33,7 @@ inline void ConfigComm::Start()
 {
 	uart.Control(ARM_USART_CONTROL_TX, 1);
 	uart.Control(ARM_USART_CONTROL_RX, 1);
-	dataState = 0;
+	dataState = StateDelimiter1;
 	command = 0; 
 	base = 0;
 	dataOffset = data;
@@ -73,54 +73,105 @@ void ConfigComm::DataReceiver()
 	{
 		switch (dataState)
 		{
-			case 0:
+			case StateDelimiter1:
 				if (dataOffset[i]==dataHeader[0])
-					dataState=1;
+					dataState = StateDelimiter2;
 				break;
-			case 1:
-				dataState = (dataOffset[i]==dataHeader[1]) ? 2 : 0;
+			case StateDelimiter2:
+				if (dataOffset[i] == dataHeader[1])
+					dataState = StateCommand;
+				else if (dataOffset[i] == dataHeader[3])
+				{
+					checksum = dataHeader[0] + dataHeader[3];
+					dataState = StateFileCommand;
+				}
+				else
+					dataState = StateDelimiter1;
 				break;
-			case 2:
+			case StateCommand:
 				command = dataOffset[i];
-				dataState = 3;
+				dataState = StateParameterLength;
 				break;
-			case 3:
+			case StateParameterLength:
 				parameterLen = dataOffset[i];
 				if (parameterLen == 0)
 				{
 					parameters.reset();
-					dataState = 0;
+					dataState = StateDelimiter1;
 					if (OnCommandArrivalEvent)
-						OnCommandArrivalEvent(command,NULL,0);
+						OnCommandArrivalEvent(command, NULL, 0);
 				}
 				else
 				{
 					parameters = boost::make_shared<uint8_t[]>(parameterLen);
-					dataState = 4;
 					parameterIndex = 0;
+					dataState = StateParameters;
 				}
 				break;
-			case 4:
+			case StateParameters:
 				parameters[parameterIndex++] = dataOffset[i];
 				if (parameterIndex >= parameterLen)
 				{
 					if (OnCommandArrivalEvent)
 						OnCommandArrivalEvent(command,parameters.get(),parameterLen);
 					parameters.reset();
-					dataState = 0;
+					dataState = StateDelimiter1;
 					uart.Control(ARM_USART_ABORT_RECEIVE,  0);
 					uart.Control(ARM_USART_CONTROL_RX, 1);
-					uart.Receive(data, 0x400);
+					uart.Receive(data, 0x200);
 					dataOffset = data;
 					base = 0;
+					return;
 				}
+				break;
+			case StateFileCommand:
+				checksum += (command = dataOffset[i]);
+				lenIndex = 0;
+				dataState = StateFileDataLength;
+				parameterLen = 0;
+				break;
+			case StateFileDataLength:
+				checksum += dataOffset[i];
+				parameterLen |= (dataOffset[i]<<(lenIndex<<3));
+				if (++lenIndex>1)
+				{
+					if (parameterLen == 0)
+					{
+						parameters.reset();
+						dataState = StateChecksum;
+					}
+					else
+					{
+						parameters = boost::make_shared<uint8_t[]>(parameterLen);
+						parameterIndex = 0;
+						dataState = StateFileData;
+					}
+				}
+				break;
+			case StateFileData:
+				checksum += (parameters[parameterIndex++] = dataOffset[i]);
+				if (parameterIndex >= parameterLen)
+					dataState = StateChecksum;
+				break;
+			case StateChecksum:
+				if ((checksum == dataOffset[i]) && OnFileSystemCommandArrivalEvent)
+						OnFileSystemCommandArrivalEvent(command,parameters.get(),parameterLen);
+				parameters.reset();
+				dataState = StateDelimiter1;
+				uart.Control(ARM_USART_ABORT_RECEIVE,  0);
+				uart.Control(ARM_USART_CONTROL_RX, 1);
+				uart.Receive(data, 0x400);
+				dataOffset = data;
+				base = 0;
+				return;
+			default:
 				break;
 		}
 	}
 	dataOffset+=num;
 }
 
-bool ConfigComm::SendData(const uint8_t *data,size_t len)
+bool ConfigComm::SendData(const uint8_t *data, size_t len)
 {
 	uint8_t pre[3]={ dataHeader[0],dataHeader[2],len };
 	ARM_USART_STATUS status;
@@ -154,6 +205,38 @@ bool ConfigComm::SendData(uint8_t command,const uint8_t *data,size_t len)
 		} while (status.tx_busy);
 		uart.Send(data,len);
 	}
+	return true;
+}
+
+bool ConfigComm::SendFSData(uint8_t command,const uint8_t *data, size_t len)
+{
+	if (len>0xffff)
+		return false;
+	uint8_t pre[5]={ dataHeader[0], dataHeader[4], command, len&0xff, (len>>8)&0xff };
+	uint8_t checksum = 0;
+	for(int i=0;i<5;i++)
+		checksum += pre[i];
+	for(int i=0;i<len;i++)
+		checksum += data[i];
+	ARM_USART_STATUS status;
+	do
+	{
+		status = uart.GetStatus();
+	} while (status.tx_busy);
+	uart.Send(pre, 5);
+	if (len>0)
+	{
+		do
+		{
+			status = uart.GetStatus();
+		} while (status.tx_busy);
+		uart.Send(data, len);
+	}
+	do
+	{
+		status = uart.GetStatus();
+	} while (status.tx_busy);
+	uart.Send(&checksum, 1);
 	return true;
 }
 

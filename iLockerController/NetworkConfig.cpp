@@ -27,8 +27,8 @@ static const uint8_t *MacRom = (const uint8_t *)(USER_ADDR+MAC_ADDRESS);
 //extern ARM_DRIVER_UART *DebugUart;
 //extern ARM_DRIVER_USART Driver_UART1;
 	
-NetworkConfig::NetworkConfig(ARM_DRIVER_USART &u)
-	: comm(u)
+NetworkConfig::NetworkConfig(ConfigComm *u)
+	: comm(*u)
 {
 	comm.OnCommandArrivalEvent.bind(this, &NetworkConfig::CommandArrival);
 	Init();
@@ -72,7 +72,6 @@ void NetworkConfig::Init()
 		memcpy(serviceEndpoint, EndpointRom, 6);
 		memcpy(&nlocalm[0], IpconfigRom, sizeof(LOCALM));
 	}
-	comm.Start();
 }
 
 const uint8_t *NetworkConfig::GetIpConfig(IpConfigItem item)

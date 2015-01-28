@@ -10,14 +10,16 @@
 #include "System.h"
 #include "CanEx.h"
 #include "NetworkConfig.h"
-#include "s25fl064.h"
+#include "SimpleFS.h"
 #include "UsbKeyboard.h"
 #include "UnitManager.h"
 #include "FastDelegate.h"
 #include "NetworkEngine.h"
+#include "vs10xx.h"
 
 using namespace fastdelegate;
 using namespace IntelliStorage;
+using namespace Skewworks;
 using namespace std;
 
 #define SYNC_DATA				0x0100
@@ -26,9 +28,11 @@ using namespace std;
 boost::shared_ptr<CANExtended::CanEx> CanEx;
 boost::shared_ptr<NetworkConfig> ethConfig;
 boost::shared_ptr<NetworkEngine> ethEngine;
-Spansion::Flash *nvrom;
-UnitManager unitManager;
+boost::shared_ptr<ConfigComm> configComm;
+boost::shared_ptr<SimpleFS> fileSystem;
+boost::shared_ptr<VS10XX> codecs;
 
+UnitManager unitManager;
 
 void SystemHeartbeat(void const *argument)
 {
@@ -127,23 +131,50 @@ static void UpdateWorker (void const *argument)
 {
 	while(1)
 	{
-		ethConfig->Poll();
-		osThreadYield();
+		if (configComm.get())
+			configComm->DataReceiver();
+		//osThreadYield();
 	}
 }
 osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
 
+//#define INSTRUCTION_CACHE_ENABLE 			1
+//#define DATA_CACHE_ENABLE 						1
+//#define PREFETCH_ENABLE								1
+
+void AudioPlayComplete()
+{
+	cout<<"Play Completed!"<<endl;
+}
+
 int main()
 {
 	HAL_Init();		/* Initialize the HAL Library    */
+	osDelay(10);	//Wait for voltage stable
 	
-	Spansion::Flash source(&Driver_SPI2, GPIOB, GPIO_PIN_12);
+	cout<<"Started..."<<endl;
 	
-	cout<<"Flash "<<(source.IsAvailable()?"available":"missing")<<endl;
+	Keyboard::Init();
+	Keyboard::OnLineReadEvent.bind(&ReadKBLine);
 	
-	nvrom = &source;
+	configComm.reset(new ConfigComm(Driver_USART2));
+	configComm->Start();
 	
-	ethConfig.reset(new NetworkConfig(Driver_USART2));
+	fileSystem.reset(new SimpleFS(&Driver_SPI2, GPIOB, GPIO_PIN_12, configComm.get()));
+	if (fileSystem->IsAvailable())
+	{
+		if (!fileSystem->IsFormated())
+			fileSystem->Format();
+#ifdef DEBUG_PRINT
+		cout<<"External Flash Available"<<endl;
+#endif
+	}
+#ifdef DEBUG_PRINT
+	else
+		cout<<"External Flash Missing"<<endl;
+#endif
+	
+	ethConfig.reset(new NetworkConfig(configComm.get()));
 	
 	//Initialize CAN
 	CanEx.reset(new CANExtended::CanEx(Driver_CAN1, 0x001));
@@ -152,19 +183,26 @@ int main()
 	cout<<"CAN Inited"<<endl;
 #endif
 	
-	cout<<"Started..."<<endl;
-	
-	Keyboard::Init();
-	Keyboard::OnLineReadEvent.bind(&ReadKBLine);
-	
+	VSConfig vsconfig = { &Driver_SPI3, 
+											  GPIOC, GPIO_PIN_9, 
+												GPIOC, GPIO_PIN_8, 
+												GPIOC, GPIO_PIN_7, 
+												GPIOE, GPIO_PIN_3 };
+	codecs.reset(new VS10XX(&vsconfig));
+	codecs->ReadData.bind(fileSystem.get(), &SimpleFS::ReadFile);
+  codecs->PlayComplete.bind(&AudioPlayComplete);
+#ifdef DEBUG_PRINT	
+	cout<<"Audio Chip: "<<codecs->GetChipVersion()<<endl;
+#endif
+												
 	//Initialize Ethernet interface
-  net_initialize();
+	net_initialize();
 	
 	ethEngine.reset(new NetworkEngine(ethConfig->GetIpConfig(IpConfigGetServiceEnpoint), unitManager.GetList()));
 	ethConfig->ServiceEndpointChangedEvent.bind(ethEngine.get(),&NetworkEngine::ChangeServiceEndpoint);
 	
 #ifdef DEBUG_PRINT
-	cout<<"LAN SPI Speed: "<<Driver_SPI1.Control(ARM_SPI_GET_BUS_SPEED, 0)<<endl;
+	cout<<"Ethernet SPI Speed: "<<Driver_SPI1.Control(ARM_SPI_GET_BUS_SPEED, 0)<<endl;
 	cout<<"Ethernet Inited"<<endl;
 #endif
 
@@ -176,6 +214,12 @@ int main()
   osTimerStart(id, 500); 
 	
 	osThreadCreate(osThread(UpdateWorker), NULL);
+	
+	uint32_t audioSize = fileSystem->Access(1);
+	if (audioSize>0)
+	{
+		codecs->Play(audioSize);
+	}
 	
   while(1) 
 	{

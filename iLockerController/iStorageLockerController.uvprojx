@@ -245,7 +245,7 @@
             <Ra2Chk>0</Ra2Chk>
             <Ra3Chk>0</Ra3Chk>
             <Im1Chk>1</Im1Chk>
-            <Im2Chk>1</Im2Chk>
+            <Im2Chk>0</Im2Chk>
             <OnChipMemories>
               <Ocm1>
                 <Type>0</Type>
@@ -493,6 +493,16 @@
               <FileType>8</FileType>
               <FilePath>.\TcpClient.cpp</FilePath>
             </File>
+            <File>
+              <FileName>vs10xx.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\vs10xx.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>SimpleFS.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\SimpleFS.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -565,7 +575,7 @@
               <RVCTZI>4</RVCTZI>
             </mem>
             <c>
-              <Define>ETH_SPI_PORT=1, ETH_SPI_BUS_SPEED=100000000</Define>
+              <Define>ETH_SPI_PORT=1, ETH_SPI_BUS_SPEED=50000000</Define>
             </c>
           </targetInfo>
         </targetInfos>
@@ -573,7 +583,12 @@
       <api Capiversion="2.02" Cclass="CMSIS Driver" Cgroup="I2C" exclusive="0">
         <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.2.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </api>
       <api Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="SPI" exclusive="0">
@@ -590,19 +605,34 @@
       <api Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="USART" exclusive="0">
         <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.2.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </api>
       <api Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="USB Host" exclusive="0">
         <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.2.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </api>
       <api Capiversion="1.0" Cclass="CMSIS" Cgroup="RTOS" exclusive="1">
         <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.2.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </api>
       <api Cclass="Device" Cgroup="STM32Cube Framework" exclusive="1">
@@ -628,7 +658,12 @@
       <component Cclass="CMSIS" Cgroup="RTOS" Csub="Keil RTX" Cvendor="ARM" Cversion="4.75.0" condition="CMSIS Core">
         <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.2.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </component>
       <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="CORE" Cvariant="Release" Cvendor="Keil" Cversion="6.2.0" condition="CMSIS Core with RTOS">
@@ -658,7 +693,7 @@
       <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="Host" Cvendor="Keil" Cversion="6.2.0" condition="USB Core and Host Driver" maxInstances="4">
         <package name="MDK-Middleware" schemaVersion="1.0" url="http://www.keil.com/pack/" vendor="Keil" version="6.2.0"/>
         <targetInfos>
-          <targetInfo name="Target 1" versionMatchMode=""/>
+          <targetInfo name="Target 1"/>
         </targetInfos>
       </component>
       <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="Host" Csub="HID" Cvendor="Keil" Cversion="6.2.0" condition="USB Host">
@@ -676,7 +711,7 @@
               <RVCTZI>4</RVCTZI>
             </mem>
             <c>
-              <Define>ETH_SPI_PORT=1, ETH_SPI_BUS_SPEED=100000000</Define>
+              <Define>ETH_SPI_PORT=1, ETH_SPI_BUS_SPEED=50000000</Define>
             </c>
           </targetInfo>
         </targetInfos>
@@ -684,7 +719,12 @@
       <component Capiversion="2.02" Cclass="CMSIS Driver" Cgroup="I2C" Cvendor="Keil" Cversion="2.01" condition="STM32F4 CMSIS_Driver I2C">
         <package name="STM32F4xx_DFP" schemaVersion="1.2" url="http://www.keil.com/pack" vendor="Keil" version="2.3.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </component>
       <component Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="SPI" Cvendor="Keil" Cversion="2.01" condition="STM32F4 CMSIS_Driver SPI">
@@ -701,19 +741,34 @@
       <component Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="USART" Cvendor="Keil" Cversion="2.01" condition="STM32F4 CMSIS_Driver USART">
         <package name="STM32F4xx_DFP" schemaVersion="1.2" url="http://www.keil.com/pack" vendor="Keil" version="2.3.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </component>
       <component Capiversion="2.00" Cclass="CMSIS Driver" Cgroup="USB Host" Csub="Full-speed" Cvendor="Keil" Cversion="2.07" condition="STM32F4 CMSIS_Driver USB0">
         <package name="STM32F4xx_DFP" schemaVersion="1.2" url="http://www.keil.com/pack" vendor="Keil" version="2.3.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </component>
       <component Capiversion="2.00" Cclass="CMSIS Driver" Cgroup="USB Host" Csub="High-speed" Cvendor="Keil" Cversion="2.07" condition="STM32F4 CMSIS_Driver USB1">
         <package name="STM32F4xx_DFP" schemaVersion="1.2" url="http://www.keil.com/pack" vendor="Keil" version="2.3.0"/>
         <targetInfos>
-          <targetInfo name="Target 1"/>
+          <targetInfo name="Target 1">
+            <mem>
+              <RVCTOtherData>4</RVCTOtherData>
+              <RVCTZI>4</RVCTZI>
+            </mem>
+          </targetInfo>
         </targetInfos>
       </component>
       <component Cclass="Device" Cgroup="STM32Cube Framework" Csub="Classic" Cvendor="Keil" Cversion="1.1.0" condition="STM32F4 Framework Classic">

@@ -20,14 +20,14 @@ enum IpConfigItem
 	//IpConfigSetDHCPEnable = 0x14,
   IpConfigWhoAmI  = 0xaa,
 	IpConfigDebugOn = 0xb0,
-	IpConfigDebugOff = 0xb1
+	IpConfigDebugOff = 0xb1,
 };
 
 class NetworkConfig
 {
 	private:
 		uint8_t serviceEndpoint[6];
-		ConfigComm comm;
+		ConfigComm &comm;
 		void GenerateMacAddress();
 		void CommandArrival(std::uint8_t command,std::uint8_t *parameters,std::size_t len);
 		void Init();
@@ -36,8 +36,7 @@ class NetworkConfig
 		ServiceEndpointChangedHandler ServiceEndpointChangedEvent;
 		const uint8_t *GetIpConfig(IpConfigItem item);
 		void SetIpConfig(IpConfigItem item, const uint8_t *data);
-		void Poll() { comm.DataReceiver(); }
-		NetworkConfig(ARM_DRIVER_USART &u);
+		NetworkConfig(ConfigComm *u);
 		~NetworkConfig() {}
 };
 
