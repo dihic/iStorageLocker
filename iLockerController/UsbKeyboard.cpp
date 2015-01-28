@@ -22,9 +22,11 @@ void Keyboard::USBH_Thread (void const *arg) {
   //char out    =  1;                          /* Output to keyboard LEDs       */
 
   USBH_Initialize (0);                       /* Initialize USB Host 0         */
+	//USBH_Initialize (1);
 	
 	osDelay(100);
 
+	
   while (1) {
     con = USBH_HID_GetDeviceStatus(0) == usbOK;  /* Get kbd connection status */
     if ((con ^ con_ex) & 1) {                /* If connection status changed  */

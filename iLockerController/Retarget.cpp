@@ -82,6 +82,7 @@ int _sys_write(FILEHANDLE fh, const unsigned char * buf,
  * if required (backspace) and then echo the character to the Terminal 
  * Emulator, printing the correct sequence after successive keystrokes.  
  */
+
 int _sys_read(FILEHANDLE fh, unsigned char * buf,
               unsigned len, int mode)
 {
