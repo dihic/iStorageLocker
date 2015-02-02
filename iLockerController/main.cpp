@@ -16,6 +16,7 @@
 #include "FastDelegate.h"
 #include "NetworkEngine.h"
 #include "vs10xx.h"
+#include "tas5727.h"
 
 using namespace fastdelegate;
 using namespace IntelliStorage;
@@ -31,6 +32,7 @@ boost::shared_ptr<NetworkEngine> ethEngine;
 boost::shared_ptr<ConfigComm> configComm;
 boost::shared_ptr<SimpleFS> fileSystem;
 boost::shared_ptr<VS10XX> codecs;
+boost::shared_ptr<PowerAmp> powerAmp;
 
 UnitManager unitManager;
 
@@ -138,19 +140,36 @@ static void UpdateWorker (void const *argument)
 }
 osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
 
-//#define INSTRUCTION_CACHE_ENABLE 			1
-//#define DATA_CACHE_ENABLE 						1
-//#define PREFETCH_ENABLE								1
+#define INSTRUCTION_CACHE_ENABLE 			1
+#define DATA_CACHE_ENABLE 						1
+#define PREFETCH_ENABLE								1
 
 void AudioPlayComplete()
 {
 	cout<<"Play Completed!"<<endl;
+	powerAmp->SetMainVolume(0);
+	powerAmp->Shutdown();
+}
+
+void AudioHeaderReady(int duration, int bitRate, int layer)
+{
+	cout<<"Audio Ready"<<endl;
+	cout<<"MP Layer: "<<layer<<endl;
+	cout<<"Bitrate: "<<bitRate<<endl;
+	cout<<"Duration: "<<duration<<" seconds"<<endl<<endl;
+	powerAmp->Start();
+	powerAmp->SetMainVolume(100);
+}
+
+void AudioPositionChanged(int position)
+{
+	//cout<<"Play on: "<<position<<endl;
 }
 
 int main()
 {
 	HAL_Init();		/* Initialize the HAL Library    */
-	osDelay(10);	//Wait for voltage stable
+	osDelay(100);	//Wait for voltage stable
 	
 	cout<<"Started..."<<endl;
 	
@@ -187,14 +206,28 @@ int main()
 											  GPIOC, GPIO_PIN_9, 
 												GPIOC, GPIO_PIN_8, 
 												GPIOC, GPIO_PIN_7, 
-												GPIOE, GPIO_PIN_3 };
+											};
 	codecs.reset(new VS10XX(&vsconfig));
 	codecs->ReadData.bind(fileSystem.get(), &SimpleFS::ReadFile);
+											
   codecs->PlayComplete.bind(&AudioPlayComplete);
+	codecs->HeaderReady.bind(&AudioHeaderReady);
+	codecs->PositionChanged.bind(&AudioPositionChanged);
 #ifdef DEBUG_PRINT	
 	cout<<"Audio Chip: "<<codecs->GetChipVersion()<<endl;
 #endif
-												
+	codecs->SetVolume(100);
+	
+	powerAmp.reset(new PowerAmp(Driver_I2C1));
+	if (powerAmp->Available())
+	{
+		cout<<"PowerAmp Available"<<endl;
+		powerAmp->Init(false);										
+		cout<<"PowerAmp Inited"<<endl;
+	}
+	else
+		cout<<"PowerAmp Unavailable"<<endl;
+	
 	//Initialize Ethernet interface
 	net_initialize();
 	
@@ -217,9 +250,13 @@ int main()
 	
 	uint32_t audioSize = fileSystem->Access(1);
 	if (audioSize>0)
-	{
 		codecs->Play(audioSize);
-	}
+	
+	while(codecs->IsBusy());
+	
+	audioSize = fileSystem->Access(2);
+	if (audioSize>0)
+		codecs->Play(audioSize);
 	
   while(1) 
 	{

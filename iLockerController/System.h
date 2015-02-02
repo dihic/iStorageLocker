@@ -10,7 +10,7 @@
 #define STATUS_PIN		GPIOC,GPIO_PIN_13
 
 extern ARM_DRIVER_CAN Driver_CAN1;
-extern ARM_DRIVER_I2C Driver_I2C;
+extern ARM_DRIVER_I2C Driver_I2C1;
 extern ARM_DRIVER_SPI Driver_SPI1;
 extern ARM_DRIVER_SPI Driver_SPI2;
 extern ARM_DRIVER_SPI Driver_SPI3;

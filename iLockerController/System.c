@@ -89,6 +89,8 @@ void IOSetup()
 	gpioType.Mode = GPIO_MODE_OUTPUT_PP;
 	gpioType.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(GPIOE, &gpioType);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
 	
 	//Configure PC13 as system heartbeat
 	gpioType.Pin = GPIO_PIN_13;
@@ -104,15 +106,18 @@ void IOSetup()
 	gpioType.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOC, &gpioType);
 	
-	//Reset Network & PowerAmp
+	//Reset Network
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
 	osDelay(20);
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
 	osDelay(20);	// require >10ms
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
+	
+	//PowerAmp Hard Reset
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_2, GPIO_PIN_SET);
+	osDelay(5);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+	osDelay(15);
 }
 
 void HAL_MspInit(void)
@@ -122,6 +127,11 @@ void HAL_MspInit(void)
 	
 	__RNG_CLK_ENABLE();
 	HAL_RNG_Init(&RNGHandle);
+}
+
+void HAL_Delay(__IO uint32_t Delay)
+{
+	osDelay(Delay);
 }
 
 #ifdef __cplusplus
