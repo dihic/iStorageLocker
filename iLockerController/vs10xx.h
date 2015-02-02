@@ -12,6 +12,8 @@
 
 #include "FastDelegate.h"
 
+#define SDI_END_FILL_BYTES_FLAC 12288
+#define SDI_END_FILL_BYTES       2052
 
 using namespace fastdelegate;
 
@@ -26,8 +28,6 @@ namespace Skewworks
 		uint16_t dcs_pin;
 		GPIO_TypeDef *dreq_port;
 		uint16_t dreq_pin;
-		GPIO_TypeDef *reset_port;
-		uint16_t reset_pin;
 	};
 	
 	class VS10XX
@@ -44,11 +44,15 @@ namespace Skewworks
 		
 			enum Values
 			{
-				SM_RESET = 0x04,
-				SM_SDINEW = 0x800,
-				SC_MULT_7 = 0xE000,
+				SM_RESET  = 0x0004,
+				SM_CANCEL = 0x0008,
+				SM_SDINEW = 0x0800,
+				
+				//SC_MULT_7 = 0xE000,
 				VOL_MUTE = 0xFEFE
 			};
+			
+			static const uint16_t AddressEndFillByte = 0x1e06;
 			
 			enum Registers
 			{
@@ -115,6 +119,7 @@ namespace Skewworks
 			string GetChipVersion();
 			int GetVolume();
 			void SetVolume(int value);
+			bool IsBusy() { return busy; }
 	};
 }
 

@@ -1,4 +1,6 @@
 #include "vs10xx.h"
+//#include <iostream>
+//#include <iomanip>
 
 namespace Skewworks
 {
@@ -6,7 +8,7 @@ namespace Skewworks
 		:config(init)
 	{
 		workThread.pthread = PlayLoop;
-		workThread.tpriority = osPriorityNormal;
+		workThread.tpriority = osPriorityAboveNormal;
 		workThread.instances = 1;
 		workThread.stacksize = 0;
 		
@@ -26,10 +28,6 @@ namespace Skewworks
 		HAL_GPIO_Init(config->dcs_port, &gpioType);			
 		HAL_GPIO_WritePin(config->dcs_port, config->dcs_pin, GPIO_PIN_SET);
 																	
-		gpioType.Pin = config->reset_pin;
-		HAL_GPIO_Init(config->reset_port, &gpioType);			
-		HAL_GPIO_WritePin(config->reset_port, config->reset_pin, GPIO_PIN_SET);
-																	
 		gpioType.Pin = config->dreq_pin;
 		gpioType.Mode = GPIO_MODE_INPUT;
 		HAL_GPIO_Init(config->dreq_port, &gpioType);
@@ -39,7 +37,7 @@ namespace Skewworks
 												ARM_SPI_DATA_BITS(8) |
 												ARM_SPI_MSB_LSB |
 												ARM_SPI_SS_MASTER_UNUSED,
-												10000000);
+												5000000);
 												
 		duration = -1;      // Duration of file playing (in seconds)
     position = -1;      // Current Play Position (in seconds)
@@ -53,10 +51,6 @@ namespace Skewworks
     lastPos = -1;
 		
 		Reset();
-		CommandWrite(SCI_MODE, SM_SDINEW);
-		CommandWrite(SCI_CLOCKF, SC_MULT_7);
-		CommandWrite(SCI_VOL, 0);
-		EnableI2S();
 	}
 	
 	void VS10XX::OnHeaderReady(int duration, int bitRate, int layer)
@@ -112,6 +106,8 @@ namespace Skewworks
 		}
 	}		
 	
+	#define AUDIO_BLOCK_SIZE 0x200
+	
 	void VS10XX::PlayLoop(void const *arg)
   {
 		VS10XX *vs = (VS10XX *)arg;
@@ -124,13 +120,15 @@ namespace Skewworks
 		vs->bitrate = 0;
 		vs->mpegLayer =0;
 		
-		uint8_t *block1 = new uint8_t[0x100];
-		uint8_t *block2 = new uint8_t[0x100];
+		vs->CommandWrite(SCI_DECODE_TIME, 0);	// Reset DECODE_TIME
+		
+		uint8_t *block1 = new uint8_t[AUDIO_BLOCK_SIZE];
+		uint8_t *block2 = new uint8_t[AUDIO_BLOCK_SIZE];
 		uint8_t *current = block1;
 		uint8_t *backup = block2;
 		
-		uint32_t seg = vs->rawSize>>8;
-		uint8_t dem = vs->rawSize & 0xff;
+		uint32_t seg = vs->rawSize / AUDIO_BLOCK_SIZE;
+		uint32_t dem = vs->rawSize % AUDIO_BLOCK_SIZE;
 		if (dem>0)
 			++seg;
 		
@@ -141,9 +139,9 @@ namespace Skewworks
 		}
 		else
 		{
-			vs->OnReadData(0, current, 0x100);
+			vs->OnReadData(0, current, AUDIO_BLOCK_SIZE);
 			uint32_t offset = 0x100;
-			for(int i=1; i<=seg; ++i)
+			for(int i=1; i<seg; ++i)
 			{
 				if (i==seg)
 				{
@@ -151,11 +149,14 @@ namespace Skewworks
 						vs->OnReadData(offset, backup, dem, true);
 				}
 				else
-					vs->OnReadData(offset, backup, 0x100, true);
-				vs->SendData(current, 0x100);
+					vs->OnReadData(offset, backup, AUDIO_BLOCK_SIZE, true);
+				
+				vs->SendData(current, AUDIO_BLOCK_SIZE);
+				//cout<<"Offset: 0x"<<hex<<offset<<dec<<endl;
 				osSignalWait (0x01, osWaitForever);
 				osSignalClear(osThreadGetId(), 0x01); //Thread syncing
-				offset += 0x100;
+				offset += AUDIO_BLOCK_SIZE;
+				//Swap current and backup
 				if (current == block1)
 				{
 					current = block2;
@@ -167,10 +168,29 @@ namespace Skewworks
 					backup = block2;
 				}
 			}
-			if (dem>0)
-				vs->SendData(current, dem);
+			vs->SendData(current, (dem>0) ? dem : AUDIO_BLOCK_SIZE);
 		}
-
+		
+		//Read EndFillByte
+		vs->CommandWrite(SCI_WRAMADDR, AddressEndFillByte); 
+		uint16_t endFillByte = vs->CommandRead(SCI_WRAM);		// What byte value to send after file
+		
+		//Send EndFillBytes
+		memset(current, endFillByte&0xff, AUDIO_BLOCK_SIZE);
+		for(int i=0; i<SDI_END_FILL_BYTES; i+=AUDIO_BLOCK_SIZE)
+			vs->SendData(current, AUDIO_BLOCK_SIZE);
+		
+		uint16_t control = vs->CommandRead(SCI_MODE);
+		vs->CommandWrite(SCI_MODE, control | SM_CANCEL);
+		do
+		{
+			vs->SendData(current, 32);
+			control = vs->CommandRead(SCI_MODE);
+		} while (control & SM_CANCEL);
+		
+		delete[] block1;
+		delete[] block2;
+		
 		vs->busy = false;
 		vs->readSoFar = -1;
 		vs->position = vs->duration;
@@ -178,6 +198,16 @@ namespace Skewworks
 		vs->mpegLayer = 0;
     vs->OnPositionChanged(vs->position);
     vs->OnPlayComplete();
+		
+		vs->CommandWrite(SCI_MODE, SM_SDINEW);
+		// Reset Variables
+		vs->duration = -1;
+		vs->mpegLayer = 0;
+		vs->position = -1;
+		vs->bitrate = 0;
+		vs->rawSize = 0;
+		vs->readSoFar = 0;
+		vs->lastPos = -1;
    }
 	
 	bool VS10XX::Play(uint32_t size)
@@ -195,6 +225,8 @@ namespace Skewworks
 		do
 		{
 			status = config->spi->GetStatus();
+			if (status.data_lost)
+				return;
 		} while (status.busy);
 	}
 	
@@ -218,14 +250,13 @@ namespace Skewworks
 		if (val == 0)
 				return -1;
 
-		uint16_t v = (uint16_t)(val << 13);
-		uint8_t layer = (v >> 14);
-
-		v = (uint16_t)(val << 15);
-		uint8_t ID = (v >> 14);
+		uint8_t layer = (val >> 1) & 0x3;
+		uint8_t ID = (val >> 3) & 0x3;
 
 		// Get Bitrate
 		val = CommandRead(SCI_HDAT0);
+		if (val == 0)
+				return -1;
 		val >>= 12;
 
 		// Get REAL Bitrate
@@ -339,12 +370,16 @@ namespace Skewworks
 		mpegLayer = 0;
 		position = -1;
 		bitrate = 0;
-		//source = string.Empty;
 		rawSize = 0;
 		readSoFar = 0;
 		lastPos = -1;
 
 		while (HAL_GPIO_ReadPin(config->dreq_port, config->dreq_pin) == GPIO_PIN_RESET);
+		
+		CommandWrite(SCI_MODE, SM_SDINEW);
+		CommandWrite(SCI_CLOCKF, 0x8800);
+		EnableI2S();
+		osDelay(100);
 	}
 	
 	void VS10XX::EnableI2S()
@@ -394,13 +429,8 @@ namespace Skewworks
 	
 	void VS10XX::SendData(uint8_t *data, int len)
 	{
-		//int size = len - len % 32;
-
-		//spi.Config = dataConfig;
 		for (int i = 0; i < len; i += 32)
 		{
-			while (HAL_GPIO_ReadPin(config->dreq_port, config->dreq_pin) == GPIO_PIN_RESET)
-				osDelay(1);    // wait till done
 			// Update Information
 			if (duration == -1)
 				duration = GetDurationInSeconds();
@@ -412,10 +442,11 @@ namespace Skewworks
 				lastPos = position;
 			}
 
+			while (HAL_GPIO_ReadPin(config->dreq_port, config->dreq_pin) == GPIO_PIN_RESET);
+//				osDelay(5);    // wait till done
 			//enable data config
 			HAL_GPIO_WritePin(config->dcs_port, config->dcs_pin, GPIO_PIN_RESET);
-			
-			if (i+32<len)
+			if (i+32<=len)
 			{
 				config->spi->Send(data+i, 32);
 				readSoFar += 32;	 // We need to know how many bytes we've read to calculate header size to get duration
@@ -426,185 +457,9 @@ namespace Skewworks
 				readSoFar += len % 32;
 			}   
 			SpiSync();
-			HAL_GPIO_WritePin(config->dcs_port, config->dcs_pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(config->dcs_port, config->dcs_pin, GPIO_PIN_SET);
 			while (pause)
 				osThreadYield();    // Wait while paused
 		}
 	}
-	
-//   class VS10XX
-//   {
-//		 
-
-//        #region Variables
-
-//        // Some GPIO pins
-//        private static OutputPort reset;
-//        private static InputPort DREQ;
-
-//        // Define SPI Configuration for VS1053 MP3 decoder
-//        private static SPI.Configuration dataConfig;
-//        private static SPI.Configuration cmdConfig;
-//        private static SPI spi;
-
-//        static private byte[] block = new byte[32];
-//        static private byte[] cmdBuffer = new byte[4];
-
-//        private static bool _initialized;       // Pins created succesfully when true
-
-//        #endregion
-
-//        #region Events
-
-//        public static event OnHeaderReady HeaderReady;
-//        public static event OnPlayComplete PlayComplete;
-//        public static event OnPositionChanged PositionChanged;
-
-//        
-
-//        #endregion
-
-//        #region Properties
-
-//        /// <summary>
-//        /// Returns the bitrate of the current file
-//        /// </summary>
-//        public static int BitRate
-//        {
-//            get { return _bitrate; }
-//        }
-
-//        /// <summary>
-//        /// Returns true if currently playing
-//        /// </summary>
-//        public static bool Busy
-//        {
-//            get { return _busy; }
-//        }
-
-//        /// <summary>
-//        /// Duration (in seconds) of file playing
-//        /// </summary>
-//        public static int Duration
-//        {
-//            get { return _duration; }
-//        }
-
-
-//        /// <summary>
-//        /// Gets/Sets filename
-//        /// </summary>
-//        public static string Filename
-//        {
-//            get
-//            {
-//                if (_source is string)
-//                    return (string)_source;
-//                else
-//                    return "Embedded Resource";
-//            }
-//            set { _source = value; }
-//        }
-
-//        public static int MPEGLayer
-//        {
-//            get { return _mpegLayer; }
-//        }
-
-//        /// <summary>
-//        /// Gets/Sets Pause state
-//        /// </summary>
-//        public static bool Pause
-//        {
-//            get { return _pause; }
-//            set { _pause = value; }
-//        }
-
-//        /// <summary>
-//        /// Gets/Sets the position of the file in seconds
-//        /// </summary>
-//        public static int Position
-//        {
-//            get
-//            {
-//                return _position;
-//            }
-//            set
-//            {
-//                throw new Exception("This method is not yet implemented");
-//            }
-//        }
-
-
-//        #endregion
-
-//        #region Public Methods
-
-//        [MethodImpl(MethodImplOptions.Synchronized)]
-//        public static void Play()
-//        {
-//            new Thread(PlayLoop).Start();
-//        }
-
-//        [MethodImpl(MethodImplOptions.Synchronized)]
-//        public static void Play(string Filename)
-//        {
-//            _source = Filename;
-//            new Thread(PlayLoop).Start();
-//        }
-
-//        [MethodImpl(MethodImplOptions.Synchronized)]
-//        public static void Play(byte[] ResourceData)
-//        {
-//            _source = ResourceData;
-//            new Thread(PlayLoop).Start();
-//        }
-
-
-//        [MethodImpl(MethodImplOptions.Synchronized)]
-//        public static void SendData(byte[] data)
-//        {
-//            int size = data.Length - data.Length % 32;
-
-//            spi.Config = dataConfig;
-//            for (int i = 0; i < size; i += 32)
-//            {
-
-//                while (DREQ.Read() == false)
-//                    Thread.Sleep(1);    // wait till done
-
-//                // Update Information
-//                if (_duration == -1)
-//                    _duration = DurationInSeconds();
-//                _position = Command_Read(SCI_DECODE_TIME);
-
-//                if (_position != _lastPos)
-//                {
-//                    OnPositionChanged(_position);
-//                    _lastPos = _position;
-//                }
-
-//                // We need to return to data config
-//                spi.Config = dataConfig;
-
-//                Array.Copy(data, i, block, 0, 32);
-
-//                spi.Write(block);
-//                _readSoFar += 32;       // We need to know how many bytes we've read to calculate header size to get duration
-
-//                while (_pause)
-//                    Thread.Sleep(1);    // Wait while paused
-//            }
-//        }
-
-//        #endregion
-
-
-//        [MethodImpl(MethodImplOptions.Synchronized)]
-//        private static 
-
-//        #endregion
-
-//    }
-//}
 }
