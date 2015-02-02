@@ -1,6 +1,6 @@
 #include "vs10xx.h"
-//#include <iostream>
-//#include <iomanip>
+#include <iostream>
+#include <iomanip>
 
 namespace Skewworks
 {
@@ -226,7 +226,10 @@ namespace Skewworks
 		{
 			status = config->spi->GetStatus();
 			if (status.data_lost)
+			{
+				cout<<"data lost!"<<endl;
 				return;
+			}
 		} while (status.busy);
 	}
 	
