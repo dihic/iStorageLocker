@@ -27,7 +27,6 @@ using namespace std;
 #define IS_LOCKER_ON 		GPIOGetValue(CON_LOCKER)==0
 
 uint8_t LedState = 0;
-bool DoorState;
 bool DoorClosedEvent = false;
 
 #define MAX_ZERO_DRIFT  2
@@ -77,27 +76,26 @@ CanResponse res;
 static bool syncTriggered = false;
 static CAN_ODENTRY syncEntry;
 
-float CurrentNetWeight=0;
-float BackupWeight=0;
-int16_t BackupValue[4];
-
 static bool Connected = true;		// host initialize connection, so set true when powerup 
 static bool RfidTimeup = true;	// for power saving
 
+static uint8_t LockCount = 0xff;
 
-#define ADDR_ZERO  					0x00
-#define ADDR_RAMP  					0x10
+#define LOCK_WAIT_SECONDS  5
+
+//#define ADDR_ZERO  					0x00
+//#define ADDR_RAMP  					0x10
 //#define ADDR_UNIT						0x20
 //#define ADDR_DEVIATION			0x24
-#define ADDR_CAL_WEIGHT			0x28
-#define ADDR_SENSOR_TYPE		0x2C
-#define ADDR_SENSOR_DISABLE	0x2E
-#define ADDR_CURRENT				0x30
+//#define ADDR_CAL_WEIGHT			0x28
+//#define ADDR_SENSOR_TYPE		0x2C
+//#define ADDR_SENSOR_DISABLE	0x2E
+//#define ADDR_CURRENT				0x30
 //#define ADDR_Q							0x40
 //#define ADDR_Q_BACKUP				0x44
 //#define ADDR_Q_PRES					0x48
 //#define ADDR_Q_GONE					0x4C
-#define ADDR_WEIGHT_RATIO   0x50
+//#define ADDR_WEIGHT_RATIO   0x50
 //#define ADDR_MED_GUID				0x60
 //#define ADDR_UNIT						0x70
 //#define ADDR_DEVIATION			0x74
@@ -126,7 +124,7 @@ void Setup()
 }
 
 
-#define RFID_TIME_COUNT    10
+#define RFID_TIME_COUNT    3
 #define RFID_TIME_INTERVAL 50
 
 extern "C" {
@@ -138,21 +136,23 @@ void TIMER32_0_IRQHandler()
 {
 	static uint32_t counter1=0;
 	static uint32_t counter2=0;
-//	uint8_t currentState;
+	bool DoorState = false;
 	
 	if ( LPC_TMR32B0->IR & 0x01 )
   {    
 		LPC_TMR32B0->IR = 1;			/* clear interrupt flag */
 		
-		//++TickCount;
-		
 		if (IS_LOCKER_ON)
 		{
+			if (LockCount == 0xff)
+				LockCount = LOCK_WAIT_SECONDS*2;
 			if (IS_DOOR_OPEN)
 			{
 				LOCKER_OFF;
+				LockCount = 0xff;
 				DoorState = true;
 			}
+			
 		}
 		else if (IS_DOOR_CLOSED && DoorState)
 		{
@@ -184,7 +184,6 @@ void TIMER32_0_IRQHandler()
 	}
 }
 
-
 void TIMER32_1_IRQHandler()
 {
 	if ( LPC_TMR32B1->IR & 0x01 )
@@ -192,6 +191,14 @@ void TIMER32_1_IRQHandler()
 		LPC_TMR32B1->IR = 1;			/* clear interrupt flag */
 		if (LedState >= 2)
 			LED_BLINK;
+		if (LockCount!=0xff && IS_LOCKER_ON)
+		{
+			if (--LockCount == 0)
+			{
+				LOCKER_OFF;
+				LockCount = 0xff;
+			}
+		}
 	}
 }
 
