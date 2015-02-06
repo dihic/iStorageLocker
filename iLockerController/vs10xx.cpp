@@ -51,6 +51,11 @@ namespace Skewworks
     lastPos = -1;
 		
 		Reset();
+		uint16_t stat = CommandRead(SCI_STAT);
+		stat = (stat << 8) >> 12;
+		available = (stat == 4);
+		if (available)
+			SetVolume(100);
 	}
 	
 	void VS10XX::OnHeaderReady(int duration, int bitRate, int layer)

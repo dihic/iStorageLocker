@@ -79,8 +79,8 @@ namespace Skewworks
       int mpegLayer;
       bool stop;
       int lastPos;
-			uint8_t block1[0x100];
-			uint8_t block2[0x100];
+			
+			bool available;
       uint8_t cmdBuffer[4];
 			
 			osThreadDef_t workThread;
@@ -120,6 +120,7 @@ namespace Skewworks
 			int GetVolume();
 			void SetVolume(int value);
 			bool IsBusy() { return busy; }
+			bool Available() { return available; }
 	};
 }
 
