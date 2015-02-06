@@ -20,6 +20,7 @@ extern ARM_DRIVER_USART Driver_USART3;
 extern RNG_HandleTypeDef RNGHandle;
 
 #define USER_ADDR 0x080E0000
+#define CARD_ADDR 0x080F0000
 
 extern const uint8_t *UserFlash;
 

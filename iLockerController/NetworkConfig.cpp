@@ -64,6 +64,8 @@ void NetworkConfig::Init()
 		serviceEndpoint[5]=0x1F;
 		for(uint32_t i=0;i<6;++i)
 			HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+ENDPOINT_ADDRESS+i, serviceEndpoint[i]);
+		for(uint32_t i=0;i<256;++i)
+			HAL_FLASH_Program(TYPEPROGRAM_BYTE, CARD_ADDR+(i<<8), 0);
 		HAL_FLASH_Lock();
 	}
 	else

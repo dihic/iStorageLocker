@@ -29,6 +29,7 @@ namespace IntelliStorage
 			uint8_t lastDoorState;
 			bool cardChanged;
 			bool doorChanged;
+			const uint8_t *memoryData;
 		public:
 			static const std::uint8_t CardArrival = 0x80;
 			static const std::uint8_t CardLeft    = 0x81;
@@ -68,7 +69,8 @@ namespace IntelliStorage
 			
 			void UpdateCard();
 			
-			std::string &GetPresId() { return card->PresId; }
+			std::string GetPresId() { return card->PresId; }
+			void SetPresId(std::string &pres);
 			
 			virtual void ProcessRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> entry);
 	};

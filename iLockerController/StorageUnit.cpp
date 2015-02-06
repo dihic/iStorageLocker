@@ -1,4 +1,6 @@
 #include "StorageUnit.h"
+#include "System.h"
+#include "stm32f4xx_hal_conf.h" 
 #include <cstring>
 
 using namespace std;
@@ -14,6 +16,21 @@ namespace IntelliStorage
 		card->State = 0;
 		card->CardId.clear();
 		card->PresId.clear();
+		memoryData = (const uint8_t *)(CARD_ADDR + ((id&0xff)<<8));
+		if (memoryData[0] !=0)
+			card->PresId.append(reinterpret_cast<const char *>(memoryData+1), memoryData[0]);
+	}
+	
+	void StorageUnit::SetPresId(std::string &pres)
+	{
+		card->PresId = pres;
+		uint8_t len = pres.length();
+		uint32_t offset = CARD_ADDR + ((card->NodeId & 0xff)<<8);
+		HAL_FLASH_Unlock();
+		HAL_FLASH_Program(TYPEPROGRAM_BYTE, offset, len);
+		for(int i=0;i<len;++i)
+			HAL_FLASH_Program(TYPEPROGRAM_BYTE, offset+i+1, pres[i]);
+		HAL_FLASH_Lock();
 	}
 
 	void StorageUnit::UpdateCard()
@@ -57,6 +74,7 @@ namespace IntelliStorage
 			{
 				case 0:
 					card->State = CardLeft;
+					//SetNotice(0);
 					break;
 				case 1:
 					offset = 9;
@@ -69,6 +87,7 @@ namespace IntelliStorage
 					card->CardId = GenerateId(rawData+1, 8);
 					card->PresId.append(reinterpret_cast<char *>(rawData+10), rawData[9]);
 					offset = 10+rawData[9];
+					//SetNotice(1);
 					break;
 			}
 			cardChanged = true;
