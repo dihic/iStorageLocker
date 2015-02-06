@@ -36,9 +36,30 @@ boost::shared_ptr<PowerAmp> powerAmp;
 
 UnitManager unitManager;
 
+static uint8_t CommandState = 0;
+
 void SystemHeartbeat(void const *argument)
 {
 	static uint8_t hbcount = 20;
+	static uint8_t stcount = 0;
+	static bool st = false;
+	
+	if (st==false)
+	{
+		if (CommandState==1)
+		{
+			stcount = 60;
+			st = true;
+		}
+	}
+	else
+	{
+		if (--stcount==0 || CommandState==0)
+		{
+			CommandState = 0;
+			st = false;
+		}
+	}
 	
 	HAL_GPIO_TogglePin(STATUS_PIN);
 	
@@ -55,10 +76,20 @@ void SystemHeartbeat(void const *argument)
 }
 osTimerDef(TimerHB, SystemHeartbeat);
 
+void PlayAudio(uint8_t index)
+{
+	if (!codecs->Available())
+		return;
+	while(codecs->IsBusy());
+	uint32_t audioSize = fileSystem->Access(index);
+	if (audioSize>0)
+		codecs->Play(audioSize);
+}
+
 void ReadKBLine(string command)
 {
-	static uint8_t CommandState = 0;
 	boost::shared_ptr<StorageUnit> unit;
+	string empty;
 	cout<<command<<endl;
 	switch (CommandState)
 	{
@@ -84,7 +115,10 @@ void ReadKBLine(string command)
 					uint16_t id = atoi(command.c_str()) | 0x0100;
 					unit = unitManager.FindUnit(id);
 					if (unit.get()!=NULL)
+					{
 						unit->OpenDoor();
+						unit->SetPresId(empty);
+					}
 				}
 			}
 			else
@@ -94,6 +128,7 @@ void ReadKBLine(string command)
 				{
 					unit->SetNotice(1);
 					unit->OpenDoor();
+					unit->SetPresId(empty);
 				}
 			}
 			break;
@@ -101,7 +136,7 @@ void ReadKBLine(string command)
 			unit = unitManager.FindEmptyUnit();
 			if (unit.get()!=NULL)
 			{
-				unit->GetPresId() = command;
+				unit->SetPresId(command);
 				unit->SetNotice(1);
 				unit->OpenDoor();
 			}
@@ -154,9 +189,9 @@ void AudioPlayComplete()
 void AudioHeaderReady(int duration, int bitRate, int layer)
 {
 	cout<<"Audio Ready"<<endl;
-	cout<<"MP Layer: "<<layer<<endl;
-	cout<<"Bitrate: "<<bitRate<<endl;
-	cout<<"Duration: "<<duration<<" seconds"<<endl<<endl;
+//	cout<<"MP Layer: "<<layer<<endl;
+//	cout<<"Bitrate: "<<bitRate<<endl;
+//	cout<<"Duration: "<<duration<<" seconds"<<endl<<endl;
 	powerAmp->Start();
 	powerAmp->SetMainVolume(100);
 }
@@ -208,15 +243,13 @@ int main()
 												GPIOC, GPIO_PIN_7, 
 											};
 	codecs.reset(new VS10XX(&vsconfig));
-	codecs->ReadData.bind(fileSystem.get(), &SimpleFS::ReadFile);
-											
+	codecs->ReadData.bind(fileSystem.get(), &SimpleFS::ReadFile);										
   codecs->PlayComplete.bind(&AudioPlayComplete);
 	codecs->HeaderReady.bind(&AudioHeaderReady);
 	codecs->PositionChanged.bind(&AudioPositionChanged);
 #ifdef DEBUG_PRINT	
 	cout<<"Audio Chip: "<<codecs->GetChipVersion()<<endl;
 #endif
-	codecs->SetVolume(100);
 	
 	powerAmp.reset(new PowerAmp(Driver_I2C1));
 	if (powerAmp->Available())
@@ -248,16 +281,9 @@ int main()
 	
 	osThreadCreate(osThread(UpdateWorker), NULL);
 	
-	uint32_t audioSize = fileSystem->Access(1);
-	if (audioSize>0)
-		codecs->Play(audioSize);
-	
-	while(codecs->IsBusy());
-	
-	audioSize = fileSystem->Access(2);
-	if (audioSize>0)
-		codecs->Play(audioSize);
-	
+	PlayAudio(1);
+	PlayAudio(2);
+
   while(1) 
 	{
 		net_main();
