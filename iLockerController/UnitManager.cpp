@@ -45,4 +45,18 @@ namespace IntelliStorage
 	{
 		unitList[id] = unit; 
 	}
+	
+	void UnitManager::Traversal()
+	{
+		for (UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
+		{
+			if (it->second->DoorChanged())
+			{
+				if (it->second->GetDoorState() == 0)	//Closed after open
+					it->second->SetNotice((it->second->IsEmpty())? 0 : 1);
+			}
+			if (it->second->CardChanged() && OnSendData)
+				OnSendData(it->second);
+		}
+	}
 }

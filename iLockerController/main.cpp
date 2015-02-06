@@ -71,8 +71,8 @@ void SystemHeartbeat(void const *argument)
 	}
 	
 	CanEx->SyncAll(SYNC_DATA, CANExtended::Trigger);	//Sync data for all CAN devices
+	unitManager.Traversal();	//Update all units 
 	
-	ethEngine->InventoryRfid();
 }
 osTimerDef(TimerHB, SystemHeartbeat);
 
@@ -126,7 +126,7 @@ void ReadKBLine(string command)
 				unit = unitManager.FindUnit(command);
 				if (unit.get()!=NULL)
 				{
-					unit->SetNotice(1);
+					unit->SetNotice(2);
 					unit->OpenDoor();
 					unit->SetPresId(empty);
 				}
@@ -137,7 +137,7 @@ void ReadKBLine(string command)
 			if (unit.get()!=NULL)
 			{
 				unit->SetPresId(command);
-				unit->SetNotice(1);
+				unit->SetNotice(2);
 				unit->OpenDoor();
 			}
 			CommandState = 0;
@@ -266,6 +266,7 @@ int main()
 	
 	ethEngine.reset(new NetworkEngine(ethConfig->GetIpConfig(IpConfigGetServiceEnpoint), unitManager.GetList()));
 	ethConfig->ServiceEndpointChangedEvent.bind(ethEngine.get(),&NetworkEngine::ChangeServiceEndpoint);
+	unitManager.OnSendData.bind(ethEngine.get(),&NetworkEngine::SendRfidData);
 	
 #ifdef DEBUG_PRINT
 	cout<<"Ethernet SPI Speed: "<<Driver_SPI1.Control(ARM_SPI_GET_BUS_SPEED, 0)<<endl;

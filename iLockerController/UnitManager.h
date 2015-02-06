@@ -6,6 +6,9 @@
 #include <boost/smart_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include "StorageUnit.h"
+#include "FastDelegate.h"
+
+using namespace fastdelegate;
 
 namespace IntelliStorage
 {
@@ -15,6 +18,8 @@ namespace IntelliStorage
 			std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList;
 		public:
 			typedef std::map<std::uint16_t, boost::shared_ptr<StorageUnit> >::iterator UnitIterator;
+			typedef FastDelegate1<boost::shared_ptr<StorageUnit> > SendDataCB;
+			SendDataCB OnSendData;
 			UnitManager() {}
 			~UnitManager() {}
 			void Add(std::uint16_t id, boost::shared_ptr<StorageUnit> unit);
@@ -23,6 +28,7 @@ namespace IntelliStorage
 			boost::shared_ptr<StorageUnit> FindEmptyUnit();
 			boost::shared_ptr<StorageUnit> FindUnit(std::string presId);
 			boost::shared_ptr<StorageUnit> FindUnit(std::uint16_t id);
+			void Traversal();
 	};
 	
 }

@@ -20,11 +20,11 @@ namespace IntelliStorage
 			NetworkEngine(const std::uint8_t *endpoint, std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > &list);
 			~NetworkEngine() {}
 			void SendHeartBeat();
+			void SendRfidData(boost::shared_ptr<StorageUnit> unit);
 			void RequestPrescriptionByBleId(std::string &bleId);
 			void NotifyBleLeave(std::string &bleId);
 			void Process();
 			void Connection();
-			void InventoryRfid();
 			void ChangeServiceEndpoint(const std::uint8_t *endpoint)
 			{
 				tcp.ChangeServiceEndpoint(endpoint);

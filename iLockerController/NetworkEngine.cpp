@@ -28,19 +28,15 @@ namespace IntelliStorage
 	}
 	
 	
-	void NetworkEngine::InventoryRfid()
+	void NetworkEngine::SendRfidData(boost::shared_ptr<StorageUnit> unit)
 	{
-		for (map<uint16_t, boost::shared_ptr<StorageUnit> >::iterator it = unitList.begin(); 
-				 it!= unitList.end(); ++it)
-		{
-			if (!it->second->CardChanged())
-				continue;
-			size_t bufferSize = 0;
-			boost::shared_ptr<uint8_t[]> buffer = BSON::Bson::Serialize(it->second->GetCard(), bufferSize);
-			it->second->UpdateCard();
-			if (buffer.get()!=NULL && bufferSize>0)
-				tcp.SendData(RfidDataCode, buffer.get(), bufferSize);
-		}
+		if (unit.get() == NULL)
+			return;
+		size_t bufferSize = 0;
+		boost::shared_ptr<uint8_t[]> buffer = BSON::Bson::Serialize(unit->GetCard(), bufferSize);
+		unit->UpdateCard();
+		if (buffer.get()!=NULL && bufferSize>0)
+			tcp.SendData(RfidDataCode, buffer.get(), bufferSize);
 	}
 	
 	void NetworkEngine::Process()
