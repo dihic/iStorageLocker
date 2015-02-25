@@ -104,7 +104,7 @@ Trf796xCommunicationSetup()
 	SSP_IOConfig(RFID_SSP);
 	SSP_Init(RFID_SSP,0,PIN_RFID_CS);
 	
-	
+	DELAY(1000);
 	GPIOSetValue(PIN_RFID_EN,1); //RFID_EN
 	DELAY(1000);
 }

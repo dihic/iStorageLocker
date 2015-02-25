@@ -16,8 +16,8 @@ using namespace std;
 #define CON_LED 		PORT2,7
 #define CON_LOCKER 	PORT2,8
 
-#define IS_DOOR_OPEN 		(GPIOGetValue(FB_LOCKER)==0)
-#define IS_DOOR_CLOSED 	(GPIOGetValue(FB_LOCKER)!=0)
+#define IS_DOOR_OPEN 		(GPIOGetValue(FB_LOCKER)!=0)
+#define IS_DOOR_CLOSED 	(GPIOGetValue(FB_LOCKER)==0)
 
 #define LED_ON					GPIOSetValue(CON_LED, 1)
 #define LED_OFF 				GPIOSetValue(CON_LED, 0)
@@ -125,7 +125,7 @@ void Setup()
 
 
 #define RFID_TIME_COUNT    3
-#define RFID_TIME_INTERVAL 50
+#define RFID_TIME_INTERVAL 100
 
 extern "C" {
 
@@ -292,8 +292,10 @@ void CanexSyncTrigger(uint16_t index, uint8_t mode)
 void UpdateRfid()
 {	
 	static uint8_t UIDlast[8];
-	//static uint8_t found = 0;
 	static uint32_t lostCount = 0;
+	
+	uint8_t result;
+	uint8_t fail;
 	
 	Trf796xTurnRfOn();
 	DELAY(2000);
@@ -304,33 +306,63 @@ void UpdateRfid()
 		{
 			memcpy(UIDlast, UID, 8);
 			memcpy((void *)(MemBuffer+0x20), UID, 8);
-			Iso15693ReadSingleBlockWithAddress(0, UID, cardInfo->GetHeader());
-			if (cardInfo->IsValid())
+			fail = 0;
+			do
 			{
-				*pRfidCardType = 0x02;
-				memcpy(cardInfo->UID, UID, 8);
-				Iso15693ReadMultipleBlockWithAddress(1, 27, UID, cardInfo->GetData());
-			}
-			else
-			{
-				*pRfidCardType = 0x01;
-				memset(cardInfo->UID, 0, 8);
-			}
-		}
-		if (*pRfidCardType == 0x02 && cardInfo->NeedUpdate())
-			Iso15693WriteSingleBlock(1, cardInfo->UID, cardInfo->GetData());
-	}
-	else
-	{
-		if (++lostCount>RFID_TIME_COUNT)
-		{
-			lostCount = RFID_TIME_COUNT;
-			if (*pRfidCardType!=0)
+				result = Iso15693ReadSingleBlockWithAddress(0, UID, cardInfo->GetHeader());
+			} while (result!=0 && ++fail<10);
+			if (fail>=10)
 			{
 				*pRfidCardType = 0x00;
 				memset(UIDlast, 0, 8);
-				lostCount=100;
+				memset((void *)(MemBuffer+0x20), 0, 8);
+				Trf796xCommunicationSetup();
+				Trf796xInitialSettings();
 			}
+			else
+			{
+				if (cardInfo->IsValid())
+				{
+					*pRfidCardType = 0x02;
+					memcpy(cardInfo->UID, UID, 8);
+					fail = 0;
+					do
+					{
+						result = Iso15693ReadMultipleBlockWithAddress(1, 27, UID, cardInfo->GetData());
+					} while (result!=0 && ++fail<10);
+					if (fail>=10)
+					{
+						*pRfidCardType = 0x00;
+						memset(UIDlast, 0, 8);
+						memset((void *)(MemBuffer+0x20), 0, 8);
+						Trf796xCommunicationSetup();
+						Trf796xInitialSettings();
+					}
+				}
+				else
+				{
+					*pRfidCardType = 0x01;
+					memset(cardInfo->UID, 0, 8);
+				}
+			}
+		}
+		if (*pRfidCardType == 0x02 && cardInfo->NeedUpdate())
+		{
+			fail = 0;
+			do
+			{
+				result = Iso15693WriteSingleBlock(1, cardInfo->UID, cardInfo->GetData());
+			} while (result!=0 && ++fail<10);
+		}
+	}
+	else if (++lostCount>RFID_TIME_COUNT)
+	{
+		lostCount = RFID_TIME_COUNT;
+		if (*pRfidCardType!=0)
+		{
+			*pRfidCardType = 0x00;
+			memset(UIDlast, 0, 8);
+			memset((void *)(MemBuffer+0x20), 0, 8);
 		}
 	}
 	Trf796xTurnRfOff();
@@ -366,8 +398,8 @@ int main()
 	{
 		if (RfidTimeup)
 		{
-			RfidTimeup = false;
 			UpdateRfid();
+			RfidTimeup = false;
 		}
 		
 		if (syncTriggered)
