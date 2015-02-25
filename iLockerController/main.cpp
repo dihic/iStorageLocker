@@ -26,6 +26,14 @@ using namespace std;
 #define SYNC_DATA				0x0100
 #define SYNC_LIVE				0x01ff
 
+#define AUDIO_SCANID		1
+#define AUDIO_GET				2
+#define AUDIO_POSITION	3
+#define AUDIO_TIMEOUT		4
+#define AUDIO_REPEATED	5
+#define AUDIO_NONE			6
+
+
 boost::shared_ptr<CANExtended::CanEx> CanEx;
 boost::shared_ptr<NetworkConfig> ethConfig;
 boost::shared_ptr<NetworkEngine> ethEngine;
@@ -38,6 +46,16 @@ UnitManager unitManager;
 
 static uint8_t CommandState = 0;
 
+void PlayAudio(uint8_t index)
+{
+	if (!codecs->Available())
+		return;
+	while(codecs->IsBusy());
+	uint32_t audioSize = fileSystem->Access(index);
+	if (audioSize>0)
+		codecs->Play(audioSize);
+}
+
 void SystemHeartbeat(void const *argument)
 {
 	static uint8_t hbcount = 20;
@@ -48,17 +66,19 @@ void SystemHeartbeat(void const *argument)
 	{
 		if (CommandState==1)
 		{
-			stcount = 60;
+			stcount = 40;
 			st = true;
 		}
 	}
 	else
 	{
-		if (--stcount==0 || CommandState==0)
+		if (--stcount==0)
 		{
+			PlayAudio(AUDIO_TIMEOUT);
 			CommandState = 0;
-			st = false;
 		}
+		if (CommandState==0)
+			st = false;
 	}
 	
 	HAL_GPIO_TogglePin(STATUS_PIN);
@@ -70,30 +90,10 @@ void SystemHeartbeat(void const *argument)
  		ethEngine->SendHeartBeat();
 	}
 	
-	UnitManager::UnitIterator it;
-	std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
-	for(it = unitList.begin(); it != unitList.end(); ++it)
-	{
-		CanEx->Sync(it->first, SYNC_DATA, CANExtended::Trigger); 
-		osDelay(10);
-	}
-	
-	unitManager.Traversal();	//Update all units
-	
 	//CanEx->SyncAll(SYNC_DATA, CANExtended::Trigger);	//Sync data for all CAN devices
 	
 }
 osTimerDef(TimerHB, SystemHeartbeat);
-
-void PlayAudio(uint8_t index)
-{
-	if (!codecs->Available())
-		return;
-	while(codecs->IsBusy());
-	uint32_t audioSize = fileSystem->Access(index);
-	if (audioSize>0)
-		codecs->Play(audioSize);
-}
 
 void ReadKBLine(string command)
 {
@@ -106,6 +106,7 @@ void ReadKBLine(string command)
 			if (command == "MAN PUT")
 			{
 				CommandState = 1;
+				PlayAudio(AUDIO_SCANID);
 			}
 			else if (command.find("MAN OPEN") == 0)
 			{
@@ -114,6 +115,7 @@ void ReadKBLine(string command)
 					unit = unitManager.FindEmptyUnit();
 					if (unit.get()!=NULL)
 					{
+						PlayAudio(AUDIO_POSITION);
 						unit->SetNotice(2, false);
 						unit->OpenDoor();
 					}
@@ -136,10 +138,13 @@ void ReadKBLine(string command)
 				unit = unitManager.FindUnit(command);
 				if (unit.get()!=NULL)
 				{
+					PlayAudio(AUDIO_GET);
 					unit->SetNotice(2, false);
 					unit->OpenDoor();
 					unit->SetPresId(empty);
 				}
+				else
+					PlayAudio(AUDIO_NONE);
 			}
 			break;
 		case 1:
@@ -147,12 +152,14 @@ void ReadKBLine(string command)
 			if (unit.get()!=NULL)
 			{
 				//cout<<"existed!"<<endl;
+				PlayAudio(AUDIO_REPEATED);
 			}
 			else
 			{
 				unit = unitManager.FindEmptyUnit();
 				if (unit.get()!=NULL)
 				{
+					PlayAudio(AUDIO_POSITION);
 					unit->SetPresId(command);
 					unit->SetNotice(2, false);
 					unit->OpenDoor();
@@ -194,6 +201,22 @@ static void UpdateWorker (void const *argument)
 	}
 }
 osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
+
+static void UpdateUnits(void const *argument)  
+{
+	while(1)
+	{
+		std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
+		for(UnitManager::UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
+		{
+			CanEx->Sync(it->first, SYNC_DATA, CANExtended::Trigger); 
+			osDelay(10);
+		}
+		unitManager.Traversal();	//Update all units
+	}
+}
+osThreadDef(UpdateUnits, osPriorityNormal, 1, 0);
+
 
 #define INSTRUCTION_CACHE_ENABLE 			1
 #define DATA_CACHE_ENABLE 						1
@@ -301,9 +324,7 @@ int main()
   osTimerStart(id, 500); 
 	
 	osThreadCreate(osThread(UpdateWorker), NULL);
-	
-//	PlayAudio(1);
-//	PlayAudio(2);
+	osThreadCreate(osThread(UpdateUnits), NULL);
 
   while(1) 
 	{
