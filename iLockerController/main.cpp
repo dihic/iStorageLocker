@@ -50,6 +50,7 @@ void PlayAudio(uint8_t index)
 {
 	if (!codecs->Available())
 		return;
+	codecs->Stop();
 	while(codecs->IsBusy());
 	uint32_t audioSize = fileSystem->Access(index);
 	if (audioSize>0)
@@ -89,9 +90,6 @@ void SystemHeartbeat(void const *argument)
 		hbcount = 0;
  		ethEngine->SendHeartBeat();
 	}
-	
-	//CanEx->SyncAll(SYNC_DATA, CANExtended::Trigger);	//Sync data for all CAN devices
-	
 }
 osTimerDef(TimerHB, SystemHeartbeat);
 
@@ -148,6 +146,8 @@ void ReadKBLine(string command)
 			}
 			break;
 		case 1:
+			if (command.substr(0,3) == "MAN")
+				break;
 			unit = unitManager.FindUnit(command);
 			if (unit.get()!=NULL)
 			{
@@ -210,9 +210,8 @@ static void UpdateUnits(void const *argument)
 		for(UnitManager::UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
 		{
 			CanEx->Sync(it->first, SYNC_DATA, CANExtended::Trigger); 
-			osDelay(10);
+			osDelay(50);
 		}
-		unitManager.Traversal();	//Update all units
 	}
 }
 osThreadDef(UpdateUnits, osPriorityNormal, 1, 0);
@@ -237,6 +236,7 @@ void AudioHeaderReady(int duration, int bitRate, int layer)
 //	cout<<"Duration: "<<duration<<" seconds"<<endl<<endl;
 	powerAmp->Start();
 	powerAmp->SetMainVolume(100);
+	osDelay(10);
 }
 
 void AudioPositionChanged(int position)
@@ -333,6 +333,8 @@ int main()
 		net_main();
     ethEngine->Process();
     osThreadYield();
+		unitManager.Traversal();	//Update all units
+		osThreadYield();
   }
 }
 

@@ -52,12 +52,7 @@ namespace IntelliStorage
 				return ((card.get()==NULL)||(card->PresId.empty()));
 			}
 			
-			void OpenDoor()
-			{
-				boost::shared_ptr<std::uint8_t[]> data = boost::make_shared<std::uint8_t[]>(1);
-				data[0]=1;
-				WriteAttribute(DeviceAttribute::ControlDoor, data, 1);
-			}
+			void OpenDoor();
 			
 			void RequestRawData()
 			{

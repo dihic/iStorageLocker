@@ -37,6 +37,14 @@ namespace IntelliStorage
 			HAL_FLASH_Program(TYPEPROGRAM_BYTE, offset+i+1, pres[i]);
 		HAL_FLASH_Lock();
 	}
+	
+	void StorageUnit::OpenDoor()
+	{
+		boost::shared_ptr<std::uint8_t[]> data = boost::make_shared<std::uint8_t[]>(1);
+		data[0]=1;
+		WriteAttribute(DeviceAttribute::ControlDoor, data, 1);
+		doorChanged = true;
+	}
 
 	void StorageUnit::UpdateCard()
 	{
