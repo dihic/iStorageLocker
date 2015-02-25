@@ -49,17 +49,17 @@ namespace IntelliStorage
 			Array<int> NodeIds;
 	};
 
-	DECLARE_CLASS(RfidData)
+	DECLARE_CLASS(RfidDataBson)
 	{
 		public:
-			RfidData()
+			RfidDataBson()
 			{
 				REGISTER_FIELD(NodeId);
 				REGISTER_FIELD(State);
 				REGISTER_FIELD(CardId);
 				REGISTER_FIELD(PresId);
 			}
-			virtual ~RfidData() {}
+			virtual ~RfidDataBson() {}
 			int NodeId;
 			int State;
 			std::string CardId;

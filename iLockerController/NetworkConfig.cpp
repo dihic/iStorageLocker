@@ -49,6 +49,7 @@ void NetworkConfig::Init()
 	{
 		GenerateMacAddress();
 		HAL_FLASH_Unlock();
+		EraseFlash();
 		HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR  , IDENTIFIER_0);
 		HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+1, IDENTIFIER_1);
 		HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+2, IDENTIFIER_2);
@@ -64,8 +65,8 @@ void NetworkConfig::Init()
 		serviceEndpoint[5]=0x1F;
 		for(uint32_t i=0;i<6;++i)
 			HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+ENDPOINT_ADDRESS+i, serviceEndpoint[i]);
-		for(uint32_t i=0;i<256;++i)
-			HAL_FLASH_Program(TYPEPROGRAM_BYTE, CARD_ADDR+(i<<8), 0);
+//		for(uint32_t i=0;i<256;++i)
+//			HAL_FLASH_Program(TYPEPROGRAM_BYTE, CARD_ADDR+(i<<8), 0);
 		HAL_FLASH_Lock();
 	}
 	else

@@ -33,7 +33,15 @@ namespace IntelliStorage
 		if (unit.get() == NULL)
 			return;
 		size_t bufferSize = 0;
-		boost::shared_ptr<uint8_t[]> buffer = BSON::Bson::Serialize(unit->GetCard(), bufferSize);
+		boost::shared_ptr<RfidData> rfid = unit->GetCard();
+		if (rfid.get() == NULL)
+			return;
+		boost::shared_ptr<RfidDataBson> rfidBson(new RfidDataBson);
+		rfidBson->NodeId = rfid->NodeId;
+		rfidBson->State = rfid->State;
+		rfidBson->PresId = rfid->PresId;
+		rfidBson->CardId = rfid->CardId;
+		boost::shared_ptr<uint8_t[]> buffer = BSON::Bson::Serialize(rfidBson, bufferSize);
 		unit->UpdateCard();
 		if (buffer.get()!=NULL && bufferSize>0)
 			tcp.SendData(RfidDataCode, buffer.get(), bufferSize);
@@ -110,6 +118,7 @@ namespace IntelliStorage
 		map<uint16_t, boost::shared_ptr<StorageUnit> >::iterator it;
 		
 		boost::shared_ptr<MemStream> stream(new MemStream(payload, size, 1));
+		boost::shared_ptr<RfidDataBson> rfidBson(new RfidDataBson);
 		
 		int id;
 		bool found = false;
@@ -131,15 +140,25 @@ namespace IntelliStorage
 					rfidData = it->second->GetCard();
 					if (rfidData->State != StorageUnit::CardArrival)
 						continue;
-					buffer = BSON::Bson::Serialize(it->second->GetCard(), bufferSize);
+					rfidData = it->second->GetCard();
+					rfidBson->NodeId = rfidData->NodeId;
+					rfidBson->State = rfidData->State;
+					rfidBson->PresId = rfidData->PresId;
+					rfidBson->CardId = rfidData->CardId;
+					buffer = BSON::Bson::Serialize(rfidBson, bufferSize);
 					if (buffer.get()!=NULL && bufferSize>0)
 						tcp.SendData(RfidDataCode, buffer.get(), bufferSize);
 				}
 				break;
 			case RfidDataCode:
-				BSON::Bson::Deserialize(stream, rfidData);
-				if (rfidData.get()!=NULL)
+				BSON::Bson::Deserialize(stream, rfidBson);
+				if (rfidBson.get()!=NULL)
 				{
+					rfidData.reset(new RfidData);
+					rfidData->NodeId = rfidBson->NodeId;
+					rfidData->State = rfidBson->State;
+					rfidData->PresId = rfidBson->PresId;
+					rfidData->CardId = rfidBson->CardId;
 					for(it = unitList.begin(); it != unitList.end(); ++it)
 						if (rfidData->PresId.compare(it->second->GetPresId())==0)
 						{
@@ -147,7 +166,7 @@ namespace IntelliStorage
 							break;
 						}
 					if (found)
-						it->second->SetNotice(rfidData->State);
+						it->second->SetNotice(rfidData->State, true);
 					else
 					{
 						response.reset(new CommandResult);
@@ -167,7 +186,12 @@ namespace IntelliStorage
 					it = unitList.find(nodeQuery->NodeId);
 					if (it != unitList.end())
 					{
-						buffer = BSON::Bson::Serialize(it->second->GetCard(), bufferSize);
+						rfidData = it->second->GetCard();
+						rfidBson->NodeId = rfidData->NodeId;
+						rfidBson->State = rfidData->State;
+						rfidBson->PresId = rfidData->PresId;
+						rfidBson->CardId = rfidData->CardId;
+						buffer = BSON::Bson::Serialize(rfidBson, bufferSize);
 						if (buffer.get()!=NULL && bufferSize>0)
 							tcp.SendData(RfidDataCode, buffer.get(), bufferSize);
 					}

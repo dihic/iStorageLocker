@@ -23,7 +23,7 @@ namespace IntelliStorage
 		{
 			if (it->second->IsEmpty())
 				continue;
-			if (it->second->GetPresId() == presId)
+			if (presId.compare(it->second->GetPresId()) == 0)
 			{
 				unit = it->second;
 				break;
@@ -53,7 +53,7 @@ namespace IntelliStorage
 			if (it->second->DoorChanged())
 			{
 				if (it->second->GetDoorState() == 0)	//Closed after open
-					it->second->SetNotice((it->second->IsEmpty())? 0 : 1);
+					it->second->SetNotice((it->second->IsEmpty())? 0 : 1, true);
 			}
 			if (it->second->CardChanged() && OnSendData)
 				OnSendData(it->second);

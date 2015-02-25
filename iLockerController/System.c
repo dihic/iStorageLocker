@@ -1,6 +1,7 @@
 #include "stm32f4xx.h"                  // Device header
 #include "cmsis_os.h"                   // ARM::CMSIS:RTOS:Keil RTX
 #include "System.h"
+#include <string.h>
 
 RNG_HandleTypeDef RNGHandle = { RNG, 
 																HAL_UNLOCKED,
@@ -132,6 +133,91 @@ void HAL_MspInit(void)
 void HAL_Delay(__IO uint32_t Delay)
 {
 	osDelay(Delay);
+}
+
+static const FLASH_EraseInitTypeDef EraseInitTypeBackup = {
+	TYPEERASE_SECTORS,
+	0,
+	FLASH_SECTOR_10,
+	1,
+	VOLTAGE_RANGE_3
+};
+
+static const FLASH_EraseInitTypeDef EraseInitTypeCurrent = {
+	TYPEERASE_SECTORS,
+	0,
+	FLASH_SECTOR_11,
+	1,
+	VOLTAGE_RANGE_3
+};
+
+void EraseFlash(void)
+{
+	uint32_t error;
+	HAL_FLASHEx_Erase((FLASH_EraseInitTypeDef *)(&EraseInitTypeCurrent), &error);
+}
+
+void PrepareWriteFlash(uint32_t addr, uint32_t size)
+{
+	uint32_t error;
+	uint32_t i = 0;
+	uint32_t limit = addr+size;
+	const uint32_t *word;
+	const uint8_t *byte;
+	//HAL_FLASH_Unlock();
+	HAL_FLASHEx_Erase((FLASH_EraseInitTypeDef *)(&EraseInitTypeBackup), &error);
+	while (i<0x10000)
+	{
+		if (i<addr)
+		{
+			if (i+4<=addr)
+			{
+				word = (uint32_t *)(USER_ADDR+i);
+				HAL_FLASH_Program(TYPEPROGRAM_WORD, BACK_ADDR+i, *word);
+				i+=4;
+				continue;
+			}
+			else
+			{
+				while(i<addr)
+				{
+					byte = (uint8_t *)(USER_ADDR+i);
+					HAL_FLASH_Program(TYPEPROGRAM_BYTE, BACK_ADDR+i, *byte);
+					++i;
+				}
+				i = limit & (~0x3);				
+			}
+		}
+		else if (i==addr)
+			i = limit & (~0x3);
+		if (i<limit && i+4>limit)
+		{
+			error = i+4 - limit;
+			i = limit;
+			while(error>0)
+			{
+				byte = (uint8_t *)(USER_ADDR+i);
+				HAL_FLASH_Program(TYPEPROGRAM_BYTE, BACK_ADDR+i, *byte);
+				--error;
+				++i;
+			}
+		}
+		else
+		{
+			word = (uint32_t *)(USER_ADDR+i);
+			HAL_FLASH_Program(TYPEPROGRAM_WORD, BACK_ADDR+i, *word);
+			i+=4;
+		}
+	}
+	HAL_FLASHEx_Erase((FLASH_EraseInitTypeDef *)(&EraseInitTypeCurrent), &error);
+	i = 0;
+	while (i<0x10000)
+	{
+		word = (uint32_t *)(BACK_ADDR+i);
+		HAL_FLASH_Program(TYPEPROGRAM_WORD, USER_ADDR+i, *word);
+		i+=4;
+	}
+	//HAL_FLASH_Lock();
 }
 
 #ifdef __cplusplus

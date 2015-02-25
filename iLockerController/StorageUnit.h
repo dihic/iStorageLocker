@@ -4,10 +4,17 @@
 #include <string>
 #include "Guid.h"
 #include "CanDevice.h"
-#include "CommStructures.h"
 
 namespace IntelliStorage
 {
+	
+	struct RfidData
+	{
+			int NodeId;
+			int State;
+			std::string CardId;
+			std::string PresId;
+	};
 	
 	class DeviceAttribute
 	{
@@ -27,6 +34,7 @@ namespace IntelliStorage
 			boost::shared_ptr<RfidData> card;
 			uint8_t lastCardType;
 			uint8_t lastDoorState;
+		  bool blinking;
 			bool cardChanged;
 			bool doorChanged;
 			const uint8_t *memoryData;
@@ -37,16 +45,11 @@ namespace IntelliStorage
 			StorageUnit(CANExtended::CanEx &ex, std::uint16_t id);
 			virtual ~StorageUnit() {}
 			
-			void SetNotice(uint8_t level)
-			{
-				boost::shared_ptr<std::uint8_t[]> data = boost::make_shared<std::uint8_t[]>(1);
-				data[0]=level;
-				WriteAttribute(DeviceAttribute::ControlLED, data, 1);
-			}
+			void SetNotice(uint8_t level, bool force);
 			
 			bool IsEmpty()
 			{
-				return (card.get()==NULL||card->PresId.empty());
+				return ((card.get()==NULL)||(card->PresId.empty()));
 			}
 			
 			void OpenDoor()
@@ -62,14 +65,19 @@ namespace IntelliStorage
 			}
 
 			bool CardChanged() const { return cardChanged; }
-			bool DoorChanged() const { return doorChanged; }
+			bool DoorChanged()
+			{ 
+				bool result = doorChanged;
+				doorChanged = false;
+				return result; 
+			}
 			
 			boost::shared_ptr<RfidData> &GetCard() { return card; }
 			uint8_t GetDoorState() { return lastDoorState; }
 			
 			void UpdateCard();
 			
-			std::string GetPresId() { return card->PresId; }
+			std::string &GetPresId() { return card->PresId; }
 			void SetPresId(std::string &pres);
 			
 			virtual void ProcessRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> entry);

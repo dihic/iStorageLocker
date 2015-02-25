@@ -20,9 +20,21 @@ extern ARM_DRIVER_USART Driver_USART3;
 extern RNG_HandleTypeDef RNGHandle;
 
 #define USER_ADDR 0x080E0000
-#define CARD_ADDR 0x080F0000
+#define CARD_ADDR 0x080E8000
+#define BACK_ADDR 0x080C0000
 
 extern const uint8_t *UserFlash;
+
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
+void EraseFlash(void);
+void PrepareWriteFlash(uint32_t addr, uint32_t size);
+	
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #define GET_RANDOM_NUMBER HAL_RNG_GetRandomNumber(&RNGHandle)
 

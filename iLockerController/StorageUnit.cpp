@@ -9,7 +9,7 @@ namespace IntelliStorage
 {
 
 	StorageUnit::StorageUnit(CANExtended::CanEx &ex, uint16_t id)
-		:	CanDevice(ex, id), lastCardType(0), cardChanged(false)
+		:	CanDevice(ex, id), lastCardType(0), blinking(false),cardChanged(false),doorChanged(false)
 	{
 		card.reset(new RfidData);
 		card->NodeId = id;
@@ -17,8 +17,11 @@ namespace IntelliStorage
 		card->CardId.clear();
 		card->PresId.clear();
 		memoryData = (const uint8_t *)(CARD_ADDR + ((id&0xff)<<8));
-		if (memoryData[0] !=0)
+		if (memoryData[0]!=0 && memoryData[0]!=0xff)
+		{
 			card->PresId.append(reinterpret_cast<const char *>(memoryData+1), memoryData[0]);
+			SetNotice(1, true);
+		}
 	}
 	
 	void StorageUnit::SetPresId(std::string &pres)
@@ -27,6 +30,8 @@ namespace IntelliStorage
 		uint8_t len = pres.length();
 		uint32_t offset = CARD_ADDR + ((card->NodeId & 0xff)<<8);
 		HAL_FLASH_Unlock();
+		if (memoryData[0]!=0xff)
+			PrepareWriteFlash(offset&0xffff, 0x100);
 		HAL_FLASH_Program(TYPEPROGRAM_BYTE, offset, len);
 		for(int i=0;i<len;++i)
 			HAL_FLASH_Program(TYPEPROGRAM_BYTE, offset+i+1, pres[i]);
@@ -58,26 +63,36 @@ namespace IntelliStorage
 		}
 		return result;
 	}
+	
+	void StorageUnit::SetNotice(uint8_t level, bool force)
+	{
+		if (force || (blinking == false))
+		{
+			blinking = (level>=2);
+			boost::shared_ptr<std::uint8_t[]> data = boost::make_shared<std::uint8_t[]>(1);
+			data[0]=level;
+			WriteAttribute(DeviceAttribute::ControlLED, data, 1);
+		}
+	}
 
 	void StorageUnit::ProcessRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> entry)
 	{
 		CanDevice::ProcessRecievedEvent(entry);
 
 		std::uint8_t *rawData = entry->GetVal().get();
-		uint8_t offset = 1;
-		
+		uint8_t offset = (rawData[0]==2)? (10+rawData[9]) : 9;
+
 		if (lastCardType != rawData[0])
 		{
 			lastCardType = rawData[0];
-		
+			cardChanged = true;
 			switch (rawData[0])
 			{
 				case 0:
 					card->State = CardLeft;
-					//SetNotice(0);
+					SetNotice(0, true);
 					break;
 				case 1:
-					offset = 9;
 					break;
 				case 2:
 					card->State = CardArrival;
@@ -86,11 +101,11 @@ namespace IntelliStorage
 					
 					card->CardId = GenerateId(rawData+1, 8);
 					card->PresId.append(reinterpret_cast<char *>(rawData+10), rawData[9]);
-					offset = 10+rawData[9];
-					//SetNotice(1);
+					SetNotice(1, true);
+					break;
+				default:
 					break;
 			}
-			cardChanged = true;
 		}
 		
 		if (offset >= entry->GetLen())
