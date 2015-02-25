@@ -70,8 +70,17 @@ void SystemHeartbeat(void const *argument)
  		ethEngine->SendHeartBeat();
 	}
 	
-	CanEx->SyncAll(SYNC_DATA, CANExtended::Trigger);	//Sync data for all CAN devices
-	unitManager.Traversal();	//Update all units 
+	UnitManager::UnitIterator it;
+	std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
+	for(it = unitList.begin(); it != unitList.end(); ++it)
+	{
+		CanEx->Sync(it->first, SYNC_DATA, CANExtended::Trigger); 
+		osDelay(10);
+	}
+	
+	unitManager.Traversal();	//Update all units
+	
+	//CanEx->SyncAll(SYNC_DATA, CANExtended::Trigger);	//Sync data for all CAN devices
 	
 }
 osTimerDef(TimerHB, SystemHeartbeat);
@@ -105,7 +114,7 @@ void ReadKBLine(string command)
 					unit = unitManager.FindEmptyUnit();
 					if (unit.get()!=NULL)
 					{
-						unit->SetNotice(1);
+						unit->SetNotice(2, false);
 						unit->OpenDoor();
 					}
 				}
@@ -116,6 +125,7 @@ void ReadKBLine(string command)
 					unit = unitManager.FindUnit(id);
 					if (unit.get()!=NULL)
 					{
+						unit->SetNotice(2, false);
 						unit->OpenDoor();
 						unit->SetPresId(empty);
 					}
@@ -126,19 +136,27 @@ void ReadKBLine(string command)
 				unit = unitManager.FindUnit(command);
 				if (unit.get()!=NULL)
 				{
-					unit->SetNotice(2);
+					unit->SetNotice(2, false);
 					unit->OpenDoor();
 					unit->SetPresId(empty);
 				}
 			}
 			break;
 		case 1:
-			unit = unitManager.FindEmptyUnit();
+			unit = unitManager.FindUnit(command);
 			if (unit.get()!=NULL)
 			{
-				unit->SetPresId(command);
-				unit->SetNotice(2);
-				unit->OpenDoor();
+				//cout<<"existed!"<<endl;
+			}
+			else
+			{
+				unit = unitManager.FindEmptyUnit();
+				if (unit.get()!=NULL)
+				{
+					unit->SetPresId(command);
+					unit->SetNotice(2, false);
+					unit->OpenDoor();
+				}
 			}
 			CommandState = 0;
 			break;
@@ -147,6 +165,7 @@ void ReadKBLine(string command)
 
 void HeartbeatArrival(uint16_t sourceId, CANExtended::DeviceState state)
 {
+	static int dc =0;
 	if (state != CANExtended::Operational)
 		return;
 	if (sourceId & 0x100)
@@ -154,6 +173,7 @@ void HeartbeatArrival(uint16_t sourceId, CANExtended::DeviceState state)
 		boost::shared_ptr<StorageUnit> unit = unitManager.FindUnit(sourceId);
 		if (unit.get() == NULL)
 		{
+			cout<<"#"<<++dc<<" DeviceID: "<<(sourceId & 0xff)<<" Added"<<endl;
 			unit.reset(new StorageUnit(*CanEx, sourceId));
 			CanEx->AddDevice(unit);
 			unit->ReadCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceReadResponse);
@@ -282,8 +302,8 @@ int main()
 	
 	osThreadCreate(osThread(UpdateWorker), NULL);
 	
-	PlayAudio(1);
-	PlayAudio(2);
+//	PlayAudio(1);
+//	PlayAudio(2);
 
   while(1) 
 	{
