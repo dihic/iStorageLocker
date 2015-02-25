@@ -8,7 +8,7 @@ namespace Skewworks
 		:config(init)
 	{
 		workThread.pthread = PlayLoop;
-		workThread.tpriority = osPriorityAboveNormal;
+		workThread.tpriority = osPriorityNormal;
 		workThread.instances = 1;
 		workThread.stacksize = 0;
 		
@@ -148,6 +148,8 @@ namespace Skewworks
 			uint32_t offset = 0x100;
 			for(int i=1; i<seg; ++i)
 			{
+				if (vs->stop)
+					break;
 				if (i==seg)
 				{
 					if (dem>0)
@@ -173,7 +175,8 @@ namespace Skewworks
 					backup = block2;
 				}
 			}
-			vs->SendData(current, (dem>0) ? dem : AUDIO_BLOCK_SIZE);
+			if (!vs->stop)
+				vs->SendData(current, (dem>0) ? dem : AUDIO_BLOCK_SIZE);
 		}
 		
 		//Read EndFillByte
