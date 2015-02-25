@@ -123,6 +123,7 @@ void SimpleFS::Format()
 	buffer[37] = 0x10;
 	buffer[38] = 0x00;
 	buffer[39] = 0x00;
+	//flash->BulkErase();
  	flash->WriteMemory(0, buffer.get(), 40, true);
 	count = 0;
 	index = 0;
@@ -179,24 +180,10 @@ bool SimpleFS::Erase()
 		return false;
 	if (index == 0)
 		return false;
-	int32_t size = currentSize;
-	uint32_t offset = currentHeader;
-	while (size > 0)
-	{
-		if ((size > 0x10000) && (offset & 0xffff == 0))
-		{
-			flash->SectorErase((offset>>16)&0x7f);
-			offset += 0x10000;
-			size -= 0x10000;
-		}
-		else
-		{
-			flash->ParameterSectorErase((offset>>12)&0x7ff);
-			offset += 0x1000;
-			size -= 0x1000;
-		}
-	}
-	return false;
+	uint8_t sector_end = ((currentHeader+currentSize)>>16) & 0x7f;
+	for(uint8_t i = ((currentHeader>>16) & 0x7f) + 1; i<=sector_end; ++i)
+		flash->SectorErase(i);
+	return true;
 }
 
 bool SimpleFS::WriteFile(uint32_t offset, uint8_t *data, uint16_t size)

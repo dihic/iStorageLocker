@@ -247,10 +247,7 @@ namespace Spansion
 		uint8_t result=0;
 		if (erase)
 		{
-			if (length >= 0x1000)
-				result = SectorErase(address>>16);
-			else
-				result = ParameterSectorErase(address>>12);
+			result = SectorErase(address>>16);
 			if (result)
 				return result;
 		}
