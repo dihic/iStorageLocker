@@ -202,19 +202,19 @@ static void UpdateWorker (void const *argument)
 }
 osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
 
-static void UpdateUnits(void const *argument)  
-{
-	while(1)
-	{
-		std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
-		for(UnitManager::UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
-		{
-			CanEx->Sync(it->first, SYNC_DATA, CANExtended::Trigger); 
-			osDelay(50);
-		}
-	}
-}
-osThreadDef(UpdateUnits, osPriorityNormal, 1, 0);
+//static void UpdateUnits(void const *argument)  
+//{
+//	while(1)
+//	{
+//		std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
+//		for(UnitManager::UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
+//		{
+//			CanEx->Sync(it->first, SYNC_DATA, CANExtended::Trigger); 
+//			osDelay(50);
+//		}
+//	}
+//}
+//osThreadDef(UpdateUnits, osPriorityNormal, 1, 0);
 
 
 #define INSTRUCTION_CACHE_ENABLE 			1
@@ -324,7 +324,7 @@ int main()
   osTimerStart(id, 500); 
 	
 	osThreadCreate(osThread(UpdateWorker), NULL);
-	osThreadCreate(osThread(UpdateUnits), NULL);
+	//osThreadCreate(osThread(UpdateUnits), NULL);
 
   while(1) 
 	{

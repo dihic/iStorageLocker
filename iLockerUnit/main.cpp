@@ -83,24 +83,12 @@ static uint8_t LockCount = 0xff;
 
 #define LOCK_WAIT_SECONDS  5
 
-//#define ADDR_ZERO  					0x00
-//#define ADDR_RAMP  					0x10
-//#define ADDR_UNIT						0x20
-//#define ADDR_DEVIATION			0x24
-//#define ADDR_CAL_WEIGHT			0x28
-//#define ADDR_SENSOR_TYPE		0x2C
-//#define ADDR_SENSOR_DISABLE	0x2E
-//#define ADDR_CURRENT				0x30
-//#define ADDR_Q							0x40
-//#define ADDR_Q_BACKUP				0x44
-//#define ADDR_Q_PRES					0x48
-//#define ADDR_Q_GONE					0x4C
-//#define ADDR_WEIGHT_RATIO   0x50
-//#define ADDR_MED_GUID				0x60
-//#define ADDR_UNIT						0x70
-//#define ADDR_DEVIATION			0x74
 #define ADDR_PRES_ID_LEN		0x78
 #define ADDR_PRES_ID_NAME		0x79
+
+bool DoorState = false;
+
+void CanexSyncTrigger(uint16_t index, uint8_t mode);
 
 void Setup()
 {
@@ -120,7 +108,7 @@ void Setup()
 	MemBuffer[0]=0xEE;
 	
 	pRfidCardType = (uint8_t *)(MemBuffer+1);
-	
+	DoorState = IS_DOOR_OPEN;
 }
 
 
@@ -136,7 +124,6 @@ void TIMER32_0_IRQHandler()
 {
 	static uint32_t counter1=0;
 	static uint32_t counter2=0;
-	bool DoorState = false;
 	
 	if ( LPC_TMR32B0->IR & 0x01 )
   {    
@@ -151,6 +138,7 @@ void TIMER32_0_IRQHandler()
 				LOCKER_OFF;
 				LockCount = 0xff;
 				DoorState = true;
+				CanexSyncTrigger(SYNC_DATA, 0);
 			}
 			
 		}
@@ -159,6 +147,7 @@ void TIMER32_0_IRQHandler()
 			LedState = 0;
 			DoorState = false;
 			DoorClosedEvent = true;
+			CanexSyncTrigger(SYNC_DATA, 0);
 		}
 		
 		if (LedState == 0)
@@ -284,6 +273,8 @@ void CanexSyncTrigger(uint16_t index, uint8_t mode)
 			break;
 		case SYNC_LIVE:
 			Connected=!Connected;
+			if (Connected)
+				CanexSyncTrigger(SYNC_DATA, 0);
 			break;
 	}
 }
@@ -345,6 +336,7 @@ void UpdateRfid()
 					memset(cardInfo->UID, 0, 8);
 				}
 			}
+			CanexSyncTrigger(SYNC_DATA, 0);
 		}
 		if (*pRfidCardType == 0x02 && cardInfo->NeedUpdate())
 		{
@@ -363,6 +355,7 @@ void UpdateRfid()
 			*pRfidCardType = 0x00;
 			memset(UIDlast, 0, 8);
 			memset((void *)(MemBuffer+0x20), 0, 8);
+			CanexSyncTrigger(SYNC_DATA, 0);
 		}
 	}
 	Trf796xTurnRfOff();
