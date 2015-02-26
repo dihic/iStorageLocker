@@ -4,7 +4,7 @@
 
 namespace Skewworks
 {
-	VS10XX::VS10XX(VSConfig *init)
+	VS10XX::VS10XX(const VSConfig *init)
 		:config(init)
 	{
 		workThread.pthread = PlayLoop;

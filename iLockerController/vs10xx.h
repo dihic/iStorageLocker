@@ -68,7 +68,7 @@ namespace Skewworks
 				SCI_HDAT1 = 0x09,
 				SCI_VOL = 0x0B,
 			};
-			VSConfig *config;
+			const VSConfig *config;
 			int duration;      // Duration of file playing (in seconds)
       int position;      // Current Play Position (in seconds)
       bool busy;      // Playing a file when true
@@ -110,7 +110,7 @@ namespace Skewworks
 			PositionChangedCB PositionChanged;
 			ReadDataCB ReadData;
 		
-			VS10XX(VSConfig *init);
+			VS10XX(const VSConfig *init);
 			~VS10XX() {}
 			bool Play(uint32_t size);
 			void Stop() { stop = true; }

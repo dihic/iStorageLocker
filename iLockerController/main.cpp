@@ -15,12 +15,10 @@
 #include "UnitManager.h"
 #include "FastDelegate.h"
 #include "NetworkEngine.h"
-#include "vs10xx.h"
-#include "tas5727.h"
+#include "Audio.h"
 
 using namespace fastdelegate;
 using namespace IntelliStorage;
-using namespace Skewworks;
 using namespace std;
 
 #define SYNC_DATA				0x0100
@@ -33,29 +31,15 @@ using namespace std;
 #define AUDIO_REPEATED	5
 #define AUDIO_NONE			6
 
-
 boost::shared_ptr<CANExtended::CanEx> CanEx;
 boost::shared_ptr<NetworkConfig> ethConfig;
 boost::shared_ptr<NetworkEngine> ethEngine;
 boost::shared_ptr<ConfigComm> configComm;
 boost::shared_ptr<SimpleFS> fileSystem;
-boost::shared_ptr<VS10XX> codecs;
-boost::shared_ptr<PowerAmp> powerAmp;
 
 UnitManager unitManager;
 
 static uint8_t CommandState = 0;
-
-void PlayAudio(uint8_t index)
-{
-	if (!codecs->Available())
-		return;
-	codecs->Stop();
-	while(codecs->IsBusy());
-	uint32_t audioSize = fileSystem->Access(index);
-	if (audioSize>0)
-		codecs->Play(audioSize);
-}
 
 void SystemHeartbeat(void const *argument)
 {
@@ -75,7 +59,7 @@ void SystemHeartbeat(void const *argument)
 	{
 		if (--stcount==0)
 		{
-			PlayAudio(AUDIO_TIMEOUT);
+			Audio::Play(AUDIO_TIMEOUT);
 			CommandState = 0;
 		}
 		if (CommandState==0)
@@ -104,7 +88,7 @@ void ReadKBLine(string command)
 			if (command == "MAN PUT")
 			{
 				CommandState = 1;
-				PlayAudio(AUDIO_SCANID);
+				Audio::Play(AUDIO_SCANID);
 			}
 			else if (command.find("MAN OPEN") == 0)
 			{
@@ -113,7 +97,7 @@ void ReadKBLine(string command)
 					unit = unitManager.FindEmptyUnit();
 					if (unit.get()!=NULL)
 					{
-						PlayAudio(AUDIO_POSITION);
+						Audio::Play(AUDIO_POSITION);
 						unit->SetNotice(2, false);
 						unit->OpenDoor();
 					}
@@ -131,18 +115,19 @@ void ReadKBLine(string command)
 					}
 				}
 			}
-			else
+			else	//User fetching
 			{
 				unit = unitManager.FindUnit(command);
 				if (unit.get()!=NULL)
 				{
-					PlayAudio(AUDIO_GET);
+					Audio::Play(AUDIO_GET);
 					unit->SetNotice(2, false);
 					unit->OpenDoor();
-					unit->SetPresId(empty);
+					if (!unit->IsRfid())
+						unit->SetPresId(empty);
 				}
 				else
-					PlayAudio(AUDIO_NONE);
+					Audio::Play(AUDIO_NONE);
 			}
 			break;
 		case 1:
@@ -152,14 +137,14 @@ void ReadKBLine(string command)
 			if (unit.get()!=NULL)
 			{
 				//cout<<"existed!"<<endl;
-				PlayAudio(AUDIO_REPEATED);
+				Audio::Play(AUDIO_REPEATED);
 			}
 			else
 			{
 				unit = unitManager.FindEmptyUnit();
 				if (unit.get()!=NULL)
 				{
-					PlayAudio(AUDIO_POSITION);
+					Audio::Play(AUDIO_POSITION);
 					unit->SetPresId(command);
 					unit->SetNotice(2, false);
 					unit->OpenDoor();
@@ -216,34 +201,6 @@ osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
 //}
 //osThreadDef(UpdateUnits, osPriorityNormal, 1, 0);
 
-
-#define INSTRUCTION_CACHE_ENABLE 			1
-#define DATA_CACHE_ENABLE 						1
-#define PREFETCH_ENABLE								1
-
-void AudioPlayComplete()
-{
-	cout<<"Play Completed!"<<endl;
-	powerAmp->SetMainVolume(0);
-	powerAmp->Shutdown();
-}
-
-void AudioHeaderReady(int duration, int bitRate, int layer)
-{
-	cout<<"Audio Ready"<<endl;
-//	cout<<"MP Layer: "<<layer<<endl;
-//	cout<<"Bitrate: "<<bitRate<<endl;
-//	cout<<"Duration: "<<duration<<" seconds"<<endl<<endl;
-	powerAmp->Start();
-	powerAmp->SetMainVolume(100);
-	osDelay(10);
-}
-
-void AudioPositionChanged(int position)
-{
-	//cout<<"Play on: "<<position<<endl;
-}
-
 int main()
 {
 	HAL_Init();		/* Initialize the HAL Library    */
@@ -280,29 +237,9 @@ int main()
 	cout<<"CAN Inited"<<endl;
 #endif
 	
-	VSConfig vsconfig = { &Driver_SPI3, 
-											  GPIOC, GPIO_PIN_9, 
-												GPIOC, GPIO_PIN_8, 
-												GPIOC, GPIO_PIN_7, 
-											};
-	codecs.reset(new VS10XX(&vsconfig));
-	codecs->ReadData.bind(fileSystem.get(), &SimpleFS::ReadFile);										
-  codecs->PlayComplete.bind(&AudioPlayComplete);
-	codecs->HeaderReady.bind(&AudioHeaderReady);
-	codecs->PositionChanged.bind(&AudioPositionChanged);
-#ifdef DEBUG_PRINT	
-	cout<<"Audio Chip: "<<codecs->GetChipVersion()<<endl;
-#endif
-	
-	powerAmp.reset(new PowerAmp(Driver_I2C1));
-	if (powerAmp->Available())
-	{
-		cout<<"PowerAmp Available"<<endl;
-		powerAmp->Init(false);										
-		cout<<"PowerAmp Inited"<<endl;
-	}
-	else
-		cout<<"PowerAmp Unavailable"<<endl;
+	Audio::Setup();
+	Audio::ReadDataDelegate().bind(fileSystem.get(), &SimpleFS::ReadFile);
+	Audio::AccessDelegate().bind(fileSystem.get(), &SimpleFS::Access);
 	
 	//Initialize Ethernet interface
 	net_initialize();
@@ -337,4 +274,3 @@ int main()
 		osThreadYield();
   }
 }
-

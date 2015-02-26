@@ -46,12 +46,6 @@ namespace IntelliStorage
 			virtual ~StorageUnit() {}
 			
 			void SetNotice(uint8_t level, bool force);
-			
-			bool IsEmpty()
-			{
-				return ((card.get()==NULL)||(card->PresId.empty()));
-			}
-			
 			void OpenDoor();
 			
 			void RequestRawData()
@@ -68,7 +62,9 @@ namespace IntelliStorage
 			}
 			
 			boost::shared_ptr<RfidData> &GetCard() { return card; }
-			uint8_t GetDoorState() { return lastDoorState; }
+			uint8_t GetDoorState() const { return lastDoorState; }
+			bool IsRfid() const { return !card->CardId.empty(); }
+			bool IsEmpty() const { return card->PresId.empty(); }
 			
 			void UpdateCard();
 			
