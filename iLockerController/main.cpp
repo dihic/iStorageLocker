@@ -21,9 +21,6 @@ using namespace fastdelegate;
 using namespace IntelliStorage;
 using namespace std;
 
-#define SYNC_DATA				0x0100
-#define SYNC_LIVE				0x01ff
-
 #define AUDIO_SCANID		1
 #define AUDIO_GET				2
 #define AUDIO_POSITION	3
@@ -187,19 +184,21 @@ static void UpdateWorker (void const *argument)
 }
 osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
 
-//static void UpdateUnits(void const *argument)  
-//{
-//	while(1)
-//	{
-//		std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
-//		for(UnitManager::UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
-//		{
-//			CanEx->Sync(it->first, SYNC_DATA, CANExtended::Trigger); 
-//			osDelay(50);
-//		}
-//	}
-//}
-//osThreadDef(UpdateUnits, osPriorityNormal, 1, 0);
+static void UpdateUnits(void const *argument)  
+{
+	while(1)
+	{
+		std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
+		for(UnitManager::UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
+		{
+			if (!it->second->DataFirstArrival())
+				it->second->RequestData();
+			osDelay(50);
+		}
+		osDelay(1000);
+	}
+}
+osThreadDef(UpdateUnits, osPriorityNormal, 1, 0);
 
 int main()
 {
@@ -261,7 +260,7 @@ int main()
   osTimerStart(id, 500); 
 	
 	osThreadCreate(osThread(UpdateWorker), NULL);
-	//osThreadCreate(osThread(UpdateUnits), NULL);
+	osThreadCreate(osThread(UpdateUnits), NULL);
 
   while(1) 
 	{

@@ -9,7 +9,8 @@ namespace IntelliStorage
 {
 
 	StorageUnit::StorageUnit(CANExtended::CanEx &ex, uint16_t id)
-		:	CanDevice(ex, id), lastCardType(0), blinking(false),cardChanged(false),doorChanged(false)
+		:	CanDevice(ex, id), lastCardType(0), 
+			blinking(false),cardChanged(false),doorChanged(false),dataArrival(false)
 	{
 		card.reset(new RfidData);
 		card->NodeId = id;
@@ -86,7 +87,8 @@ namespace IntelliStorage
 	void StorageUnit::ProcessRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> entry)
 	{
 		CanDevice::ProcessRecievedEvent(entry);
-
+		dataArrival = true;
+		
 		std::uint8_t *rawData = entry->GetVal().get();
 		uint8_t offset = (rawData[0]==2)? (10+rawData[9]) : 9;
 

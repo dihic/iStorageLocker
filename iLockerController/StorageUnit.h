@@ -7,6 +7,8 @@
 
 namespace IntelliStorage
 {
+#define SYNC_DATA				0x0100
+#define SYNC_LIVE				0x01ff
 	
 	struct RfidData
 	{
@@ -37,6 +39,8 @@ namespace IntelliStorage
 		  bool blinking;
 			bool cardChanged;
 			bool doorChanged;
+			bool dataArrival;
+			
 			const uint8_t *memoryData;
 		public:
 			static const std::uint8_t CardArrival = 0x80;
@@ -52,6 +56,8 @@ namespace IntelliStorage
 			{
 				ReadAttribute(DeviceAttribute::RawData);
 			}
+			
+			bool DataFirstArrival() const { return dataArrival; }
 
 			bool CardChanged() const { return cardChanged; }
 			bool DoorChanged()
@@ -70,6 +76,11 @@ namespace IntelliStorage
 			
 			std::string &GetPresId() { return card->PresId; }
 			void SetPresId(std::string &pres);
+			
+			void RequestData()
+			{
+				canex.Sync(DeviceId, SYNC_DATA, CANExtended::Trigger);
+			}
 			
 			virtual void ProcessRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> entry);
 	};
