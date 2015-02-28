@@ -47,13 +47,13 @@ void NetworkConfig::Init()
 		firstUse=true;
 	if (firstUse)
 	{
-		GenerateMacAddress();
 		HAL_FLASH_Unlock();
 		EraseFlash();
 		HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR  , IDENTIFIER_0);
 		HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+1, IDENTIFIER_1);
 		HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+2, IDENTIFIER_2);
 		HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+3, IDENTIFIER_3);
+		GenerateMacAddress();
 		uint8_t *ip = reinterpret_cast<uint8_t *>(&nlocalm[0]);
 		for(uint32_t i=0; i<sizeof(LOCALM); ++i)
 			HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+IPCONFIG_ADDRESS+i, ip[i]);
@@ -136,7 +136,10 @@ void NetworkConfig::SetIpConfig(IpConfigItem item, const uint8_t *data)
 			return;
 	}
 	HAL_FLASH_Unlock();
-	uint8_t *ip = reinterpret_cast<uint8_t *>(&nlocalm[0]);
+	PrepareWriteFlash(ENDPOINT_ADDRESS, 8+sizeof(LOCALM));
+	uint8_t *ip = reinterpret_cast<uint8_t *>(&localm[0]);
+	for(uint32_t i=0;i<6;++i)
+		HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+ENDPOINT_ADDRESS+i, serviceEndpoint[i]);
 	for(uint32_t i=0; i<sizeof(LOCALM); ++i)
 		HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+IPCONFIG_ADDRESS+i, ip[i]);
 	HAL_FLASH_Lock();
@@ -148,10 +151,10 @@ void NetworkConfig::GenerateMacAddress()
 {
 	std::uint32_t mac = GET_RANDOM_NUMBER;
 	memcpy(eth0_config.MacAddr+3, &mac, 3);
-	HAL_FLASH_Unlock();
+	//HAL_FLASH_Unlock();
 	for(uint32_t i=0;i<6;++i)
 		HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+MAC_ADDRESS+i, eth0_config.MacAddr[i]);
-	HAL_FLASH_Lock();
+	//HAL_FLASH_Lock();
 }
 
 void NetworkConfig::CommandArrival(std::uint8_t command,std::uint8_t *parameters,std::size_t len)
