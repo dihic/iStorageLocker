@@ -116,12 +116,12 @@ void ConfigComm::DataReceiver()
 						OnCommandArrivalEvent(command,parameters.get(),parameterLen);
 					parameters.reset();
 					dataState = StateDelimiter1;
-					uart.Control(ARM_USART_ABORT_RECEIVE,  0);
-					uart.Control(ARM_USART_CONTROL_RX, 1);
-					uart.Receive(data, 0x200);
-					dataOffset = data;
-					base = 0;
-					return;
+//					uart.Control(ARM_USART_ABORT_RECEIVE,  0);
+//					uart.Control(ARM_USART_CONTROL_RX, 1);
+//					uart.Receive(data, 0x200);
+//					dataOffset = data;
+//					base = 0;
+//					return;
 				}
 				break;
 			case StateFileCommand:
