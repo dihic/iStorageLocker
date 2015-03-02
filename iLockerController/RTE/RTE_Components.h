@@ -48,7 +48,7 @@
 #define RTE_Drivers_USBH0               /* Driver USBH0 */
 #define RTE_Drivers_USBH1               /* Driver USBH1 */
 #define RTE_Network_Core                /* Network Core */
-          #define RTE_Network_Release             /* Network Release Version */
+          #define RTE_Network_Debug               /* Network Debug Version */
 #define RTE_Network_Interface_ETH_0     /* Network Interface ETH 0 */
 #define RTE_Network_Socket_TCP          /* Network Socket TCP */
 #define RTE_USB_Core                    /* USB Core */
