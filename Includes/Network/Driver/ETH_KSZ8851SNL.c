@@ -620,9 +620,14 @@ static int32_t MAC_ReadFrame (uint8_t *frame, uint32_t len) {
 
   /* Read received frame */
   ptrSPI->Receive (frame, len);
+	while (ptrSPI->GetStatus().busy);
 
   /* Read dummy bytes for alignment */
-  if (len & 3) ptrSPI->Receive (buf, 4 - (len & 3));
+  if (len & 3) 
+	{
+		ptrSPI->Receive (buf, 4 - (len & 3));
+		while (ptrSPI->GetStatus().busy);
+	}
 
   ptrSPI->Control (ARM_SPI_CONTROL_SS, ARM_SPI_SS_INACTIVE);
 
@@ -972,7 +977,7 @@ static int32_t PHY_SetMode (uint32_t mode) {
   }
 
   if (mode & ARM_ETH_PHY_ISOLATE) {
-    val |= REG_P1CR_TXIDS;
+    val |= REG_P1MBCR_DISTX; 	//REG_P1CR_TXIDS;
   }
 
   reg_wr (REG_P1MBCR, val);
