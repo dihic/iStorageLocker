@@ -269,7 +269,7 @@ int main()
 		CanEx->Poll();
 		net_main();
     ethEngine->Process();
-//		net_main();
+		net_main();
 //		unitManager.Traversal();	//Update all units
 		osThreadYield();
   }

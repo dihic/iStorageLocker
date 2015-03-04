@@ -164,7 +164,6 @@ void PrepareWriteFlash(uint32_t addr, uint32_t size)
 	uint32_t limit = addr+size;
 	const uint32_t *word;
 	const uint8_t *byte;
-	//HAL_FLASH_Unlock();
 	HAL_FLASHEx_Erase((FLASH_EraseInitTypeDef *)(&EraseInitTypeBackup), &error);
 	while (i<0x10000)
 	{
@@ -217,7 +216,6 @@ void PrepareWriteFlash(uint32_t addr, uint32_t size)
 		HAL_FLASH_Program(TYPEPROGRAM_WORD, USER_ADDR+i, *word);
 		i+=4;
 	}
-	//HAL_FLASH_Lock();
 }
 
 #ifdef __cplusplus

@@ -63,7 +63,7 @@ void NetworkConfig::Init()
 		serviceEndpoint[3]=1;
 		serviceEndpoint[4]=0x40;
 		serviceEndpoint[5]=0x1F;
-		for(uint32_t i=0;i<6;++i)
+		for(int i=0;i<6;++i)
 			HAL_FLASH_Program(TYPEPROGRAM_BYTE, USER_ADDR+ENDPOINT_ADDRESS+i, serviceEndpoint[i]);
 //		for(uint32_t i=0;i<256;++i)
 //			HAL_FLASH_Program(TYPEPROGRAM_BYTE, CARD_ADDR+(i<<8), 0);
@@ -135,6 +135,7 @@ void NetworkConfig::SetIpConfig(IpConfigItem item, const uint8_t *data)
 		default:
 			return;
 	}
+	
 	HAL_FLASH_Unlock();
 	PrepareWriteFlash(ENDPOINT_ADDRESS, 8+sizeof(LOCALM));
 	uint8_t *ip = reinterpret_cast<uint8_t *>(&localm[0]);

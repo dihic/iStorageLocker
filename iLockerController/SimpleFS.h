@@ -32,10 +32,10 @@ class SimpleFS
 	public:
 		SimpleFS(ARM_DRIVER_SPI *spi, GPIO_TypeDef *cs_port, uint16_t cs_pin, ConfigComm *u);
 		~SimpleFS() {}
-		bool IsAvailable() { return available; }
-		uint8_t Count() { return count; }
+		bool IsAvailable() const { return available; }
+		uint8_t Count() const { return count; }
 		void Format();
-		bool IsFormated() { return formated; }
+		bool IsFormated() const { return formated; }
 		uint8_t CreateNew(uint32_t size);
 		uint32_t Access(uint8_t file);
 		bool Erase();

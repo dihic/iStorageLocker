@@ -9,10 +9,6 @@
 
 #define STATUS_PIN		GPIOC,GPIO_PIN_13
 
-#define INSTRUCTION_CACHE_ENABLE 			1
-#define DATA_CACHE_ENABLE 						1
-#define PREFETCH_ENABLE								1
-
 extern ARM_DRIVER_CAN Driver_CAN1;
 extern ARM_DRIVER_I2C Driver_I2C1;
 extern ARM_DRIVER_SPI Driver_SPI1;
