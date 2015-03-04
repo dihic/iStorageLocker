@@ -172,7 +172,7 @@
 //     <i>will send a Gratuitous ARP notification at startup,
 //     <i>or when the device IP address has changed.
 //     <i>Default: Disabled
-#define ETH0_ARP_NOTIFY         0
+#define ETH0_ARP_NOTIFY         1
 //   </h>
 
 //   <e>IGMP Group Management

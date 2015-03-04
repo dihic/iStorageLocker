@@ -34,7 +34,7 @@ TcpClient::TcpClient(const std::uint8_t *endpoint)
 	semaphoreRid = osSemaphoreCreate(osSemaphore(SemaphoreReceiveTcp), TCP_BUFFER_NUM);
 	memcpy(serverIp, endpoint, 4);
 	//Driver_ETH_PHY0.SetMode(ARM_ETH_MODE_10M_FULL_DUPLEX);
-	Driver_ETH_PHY0.SetMode(ARM_ETH_PHY_AUTO_NEGOTIATE);
+	//Driver_ETH_PHY0.SetMode(ARM_ETH_PHY_AUTO_NEGOTIATE);
 	osDelay(50);
 	txCount = TCP_BUFFER_NUM*2;
 	rxCount = TCP_BUFFER_NUM;

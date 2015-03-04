@@ -20,7 +20,7 @@
 
 //   <o>Ethernet Debug <0=> Off <1=> Errors only <2=> Full debug
 //   <i>Turn On/Off Ethernet debug messages
-#define DBG_ETH                 2
+#define DBG_ETH                 1
 
 //   <o>PPP Debug   <0=> Off <1=> Errors only <2=> Full debug
 //   <i>Turn On/Off PPP debug messages
@@ -36,7 +36,7 @@
 
 //   <o>IP Debug    <0=> Off <1=> Errors only <2=> Full debug
 //   <i>Turn On/Off IP debug messages
-#define DBG_IP                  2
+#define DBG_IP                  1
 
 //   <o>ICMP Debug  <0=> Off <1=> Errors only <2=> Full debug
 //   <i>Turn On/Off ICMP debug messages

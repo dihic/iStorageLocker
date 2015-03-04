@@ -158,7 +158,7 @@
 //   <i> Defines priority for Timer Thread
 //   <i> Default: High
 #ifndef OS_TIMERPRIO
- #define OS_TIMERPRIO   3
+ #define OS_TIMERPRIO   4
 #endif
  
 //   <o>Timer Thread stack size [bytes] <64-4096:8><#/4>

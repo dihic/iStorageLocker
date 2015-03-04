@@ -179,6 +179,7 @@ static void UpdateWorker (void const *argument)
 	{
 		if (configComm.get())
 			configComm->DataReceiver();
+		unitManager.Traversal();	//Update all units
 		osThreadYield();
 	}
 }
@@ -259,17 +260,17 @@ int main()
 	osTimerId id = osTimerCreate(osTimer(TimerHB), osTimerPeriodic, NULL);
   osTimerStart(id, 500); 
 	
-	//osThreadCreate(osThread(UpdateWorker), NULL);
-	//osThreadCreate(osThread(UpdateUnits), NULL);
+	osThreadCreate(osThread(UpdateWorker), NULL);
+	osThreadCreate(osThread(UpdateUnits), NULL);
 
   while(1) 
 	{
 		net_main();
-//		CanEx->Poll();
-//		net_main();
-//    ethEngine->Process();
+		CanEx->Poll();
+		net_main();
+    ethEngine->Process();
 //		net_main();
 //		unitManager.Traversal();	//Update all units
-//		osThreadYield();
+		osThreadYield();
   }
 }
