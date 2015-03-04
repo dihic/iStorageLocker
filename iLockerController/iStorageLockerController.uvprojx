@@ -310,7 +310,7 @@
               <OCR_RVCT4>
                 <Type>1</Type>
                 <StartAddress>0x8000000</StartAddress>
-                <Size>0x100000</Size>
+                <Size>0xc0000</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
                 <Type>1</Type>
@@ -717,7 +717,7 @@
         <targetInfos>
           <targetInfo name="Target 1">
             <c>
-              <Define>ETH_SPI_PORT=1, ETH_SPI_BUS_SPEED=20000000</Define>
+              <Define>ETH_SPI_PORT=1, ETH_SPI_BUS_SPEED=40000000</Define>
             </c>
           </targetInfo>
         </targetInfos>
