@@ -78,7 +78,9 @@ void ReadKBLine(string command)
 {
 	boost::shared_ptr<StorageUnit> unit;
 	string empty;
+#ifdef DEBUG_PRINT
 	cout<<command<<endl;
+#endif
 	switch (CommandState)
 	{
 		case 0:
@@ -162,7 +164,9 @@ void HeartbeatArrival(uint16_t sourceId, CANExtended::DeviceState state)
 		boost::shared_ptr<StorageUnit> unit = unitManager.FindUnit(sourceId);
 		if (unit.get() == NULL)
 		{
+#ifdef DEBUG_PRINT
 			cout<<"#"<<++dc<<" DeviceID: "<<(sourceId & 0xff)<<" Added"<<endl;
+#endif
 			unit.reset(new StorageUnit(*CanEx, sourceId));
 			CanEx->AddDevice(unit);
 			unit->ReadCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceReadResponse);
@@ -177,10 +181,10 @@ static void UpdateWorker (void const *argument)
 {
 	while(1)
 	{
-		if (configComm.get())
-			configComm->DataReceiver();
+		configComm->DataReceiver();
+		CanEx->Poll();
 		unitManager.Traversal();	//Update all units
-		osThreadYield();
+		//osThreadYield();
 	}
 }
 osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
@@ -266,11 +270,8 @@ int main()
   while(1) 
 	{
 		net_main();
-		CanEx->Poll();
-		net_main();
     ethEngine->Process();
 		net_main();
-//		unitManager.Traversal();	//Update all units
 		osThreadYield();
   }
 }
