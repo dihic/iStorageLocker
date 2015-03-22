@@ -191,6 +191,7 @@ osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
 
 static void UpdateUnits(void const *argument)  
 {
+	osDelay(3000);
 	while(1)
 	{
 		std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
@@ -209,6 +210,8 @@ int main()
 {
 	HAL_Init();		/* Initialize the HAL Library    */
 	osDelay(100);	//Wait for voltage stable
+	
+	CommStructures::Register();
 	
 	cout<<"Started..."<<endl;
 	
@@ -258,13 +261,21 @@ int main()
 #endif
 
 	//Start to find unit devices
-	CanEx->SyncAll(SYNC_LIVE, CANExtended::Trigger);
+	//CanEx->SyncAll(SYNC_LIVE, CANExtended::Trigger);
+	
 	
 	//Initialize system heatbeat
 	osTimerId id = osTimerCreate(osTimer(TimerHB), osTimerPeriodic, NULL);
   osTimerStart(id, 500); 
 	
 	osThreadCreate(osThread(UpdateWorker), NULL);
+	
+	for(int8_t i=1;i<0x7f;++i)
+	{
+		CanEx->Sync(i|0x100, SYNC_LIVE, CANExtended::Trigger);
+		osDelay(100);
+	}
+	
 	osThreadCreate(osThread(UpdateUnits), NULL);
 
   while(1) 

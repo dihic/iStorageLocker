@@ -1,6 +1,6 @@
 #include "CanDevice.h"
 
-#define SYNC_TIME 100
+#define SYNC_TIME 500
 
 using namespace std;
 
@@ -48,7 +48,7 @@ namespace IntelliStorage
 		delete wta;	//Release wta
 		
 		osEvent result;
-		uint8_t tryCount = 5;
+		uint8_t tryCount = 3;
 		do
 		{
 			device.canex.Request(device.DeviceId, *entry);	
@@ -101,18 +101,23 @@ namespace IntelliStorage
 		busy = true;
 		WorkThreadArgs *args = new WorkThreadArgs(*this, attr, 0xff, false);
 		osThreadId tid = osThreadCreate(WorkThreadDef.get(), args);
-		
-		if (tid == NULL)
+		while (tid==NULL)
 		{
-			if (ReadCommandResponse)
-				ReadCommandResponse(*this, attr, dump, 0);
-			busy = false;
+			osDelay(100);
+			tid = osThreadCreate(WorkThreadDef.get(), args);
 		}
-		else
-		{
+		
+//		if (tid == NULL)
+//		{
+//			if (ReadCommandResponse)
+//				ReadCommandResponse(*this, attr, dump, 0);
+//			busy = false;
+//		}
+//		else
+//		{
 			SyncTable[(DeviceId<<16)|attr] = tid;
 			osSignalSet(tid, 0x100);			//Continue work thread after recorded in SyncTable
-		}
+//		}
 	}
 	
   void CanDevice::WriteAttribute(uint16_t attr,const boost::shared_ptr<std::uint8_t[]> &data, size_t size)
@@ -131,17 +136,23 @@ namespace IntelliStorage
 
 		osThreadId tid = osThreadCreate(WorkThreadDef.get(), args);
 		
-		if (tid == NULL)
+		while (tid==NULL)
 		{
-			if (WriteCommandResponse)
-				WriteCommandResponse(*this, attr, false);
-			busy = false;
+			osDelay(100);
+			tid = osThreadCreate(WorkThreadDef.get(), args);
 		}
-		else
-		{
+		
+//		if (tid == NULL)
+//		{
+//			if (WriteCommandResponse)
+//				WriteCommandResponse(*this, attr, false);
+//			busy = false;
+//		}
+//		else
+//		{
 			SyncTable[(DeviceId<<16)|attr] = tid;
 			osSignalSet(tid, 0x100);
-		}
+//		}
 	}
 	
 	void CanDevice::ResponseRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> entry)
