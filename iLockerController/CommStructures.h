@@ -13,7 +13,8 @@ namespace IntelliStorage
 		RfidDataCode = 0x0E,        //class RfidData
 		CommandResponse = 0x14,
 		QueryRfid = 0x15,
-		
+		BarcodeCommand = 0x20,
+		WhoAmICode = 0xff,
 	};
 
 	DECLARE_CLASS(HeartBeat)
@@ -79,6 +80,17 @@ namespace IntelliStorage
 			int NodeId;
 			int Command;
 			bool Result;
+	};
+	
+	DECLARE_CLASS(StrCommand)
+	{
+		public:
+			StrCommand()
+			{
+				REGISTER_FIELD(Command);
+			}
+			virtual ~StrCommand() {}
+			std::string Command;
 	};
 	
 	class CommStructures

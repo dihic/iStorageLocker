@@ -27,6 +27,14 @@ namespace IntelliStorage
 		tcp.SendData(HeartBeatCode, HB, 0x14);
 	}
 	
+	void NetworkEngine::WhoAmI()
+	{
+		static const uint8_t ME[0x14]={0x14, 0x00, 0x00, 0x00, 0x12, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x00,
+																	 0x03, 0x01, 0x02, 0x01, 			// Locker 0x03, iStorage 0x01, TCM 0x02, 0x01 Pharmacy Products
+																	 0x00, 0x00, 0x00, 0x00, 0x00};
+		tcp.SendData(HeartBeatCode, ME, 0x14);
+	}
+	
 	
 	void NetworkEngine::SendRfidData(boost::shared_ptr<StorageUnit> unit)
 	{
@@ -114,6 +122,7 @@ namespace IntelliStorage
 		boost::shared_ptr<NodeList> 								nodeList;
 		boost::shared_ptr<RfidData> 								rfidData;
 		boost::shared_ptr<CommandResult>  					response;
+		boost::shared_ptr<StrCommand>  							strcommand;
 
 		map<uint16_t, boost::shared_ptr<StorageUnit> >::iterator it;
 		
@@ -196,6 +205,17 @@ namespace IntelliStorage
 							tcp.SendData(RfidDataCode, buffer.get(), bufferSize);
 					}
 				}
+			case BarcodeCommand:
+				BSON::Bson::Deserialize(stream, strcommand);
+				if (strcommand.get()!=NULL)
+				{
+					if (StrCommandDelegate)
+						StrCommandDelegate(strcommand->Command);
+				}
+				break;
+			case WhoAmICode:
+				WhoAmI();
+				break;
 			default:
 				break;
 		}

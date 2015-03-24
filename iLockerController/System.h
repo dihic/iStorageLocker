@@ -7,8 +7,6 @@
 #include "Driver_SPI.h"                 // ::CMSIS Driver:SPI
 #include "Driver_USART.h"               // ::CMSIS Driver:USART
 
-#define DEBUG_PRINT
-
 #define STATUS_PIN		GPIOC,GPIO_PIN_13
 
 extern ARM_DRIVER_CAN Driver_CAN1;

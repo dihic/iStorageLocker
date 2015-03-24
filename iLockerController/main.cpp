@@ -38,11 +38,10 @@ UnitManager unitManager;
 
 static uint8_t CommandState = 0;
 
-void SystemHeartbeat(void const *argument)
+void CommandTimeoutDetector()
 {
-	static uint8_t hbcount = 20;
-	static uint8_t stcount = 0;
 	static bool st = false;
+	static uint8_t stcount = 0;
 	
 	if (st==false)
 	{
@@ -62,11 +61,18 @@ void SystemHeartbeat(void const *argument)
 		if (CommandState==0)
 			st = false;
 	}
+}
+
+void SystemHeartbeat(void const *argument)
+{
+	static uint8_t hbcount = 20;
 	
 	HAL_GPIO_TogglePin(STATUS_PIN);
 	
+	CommandTimeoutDetector();
+	
 	//Send a heart beat per 10s
-	if (++hbcount>20 && (ethEngine.get()!=NULL))
+	if ((ethEngine.get()!=NULL) && ++hbcount>20)
 	{
 		hbcount = 0;
  		ethEngine->SendHeartBeat();
@@ -89,6 +95,18 @@ void ReadKBLine(string command)
 				CommandState = 1;
 				Audio::Play(AUDIO_SCANID);
 			}
+			else if (command.find("MAN PUTID") == 0 && command.length() > 9)
+			{
+				command.erase(0, 9);
+				unit = unitManager.FindEmptyUnit();
+				if (unit.get()!=NULL)
+				{
+					Audio::Play(AUDIO_POSITION);
+					unit->SetPresId(command);
+					unit->SetNotice(2, false);
+					unit->OpenDoor();
+				}
+			}
 			else if (command.find("MAN OPEN") == 0)
 			{
 				if (command.length() == 8)
@@ -104,13 +122,29 @@ void ReadKBLine(string command)
 				else
 				{
 					command.erase(0, 8);
-					uint16_t id = atoi(command.c_str()) | 0x0100;
-					unit = unitManager.FindUnit(id);
-					if (unit.get()!=NULL)
+					if (command == "ALL")
 					{
-						unit->SetNotice(2, false);
-						unit->OpenDoor();
-						unit->SetPresId(empty);
+						std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
+						for(UnitManager::UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
+						{
+							it->second->SetNotice(2, false);
+							it->second->OpenDoor();
+							if (!it->second->IsRfid())
+								it->second->SetPresId(empty);
+							osDelay(1000);
+						}
+					}
+					else
+					{
+						uint16_t id = atoi(command.c_str()) | 0x0100;
+						unit = unitManager.FindUnit(id);
+						if (unit.get()!=NULL)
+						{
+							unit->SetNotice(2, false);
+							unit->OpenDoor();
+							if (!unit->IsRfid())
+								unit->SetPresId(empty);
+						}
 					}
 				}
 			}
@@ -182,26 +216,18 @@ static void UpdateWorker (void const *argument)
 	while(1)
 	{
 		configComm->DataReceiver();
-		CanEx->Poll();
-		unitManager.Traversal();	//Update all units
-		//osThreadYield();
+		osThreadYield();
 	}
 }
 osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
 
-static void UpdateUnits(void const *argument)  
+static void UpdateUnits(void const *argument)  //Prevent missing status
 {
-	osDelay(3000);
+	//osDelay(3000);
 	while(1)
 	{
-		std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
-		for(UnitManager::UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
-		{
-			if (!it->second->DataFirstArrival())
-				it->second->RequestData();
-			osDelay(50);
-		}
-		osDelay(1000);
+		CanEx->Poll();
+		unitManager.Traversal();	//Update all units
 	}
 }
 osThreadDef(UpdateUnits, osPriorityNormal, 1, 0);
@@ -252,6 +278,7 @@ int main()
 	net_initialize();
 	
 	ethEngine.reset(new NetworkEngine(ethConfig->GetIpConfig(IpConfigGetServiceEnpoint), unitManager.GetList()));
+	ethEngine->StrCommandDelegate.bind(&ReadKBLine);
 	ethConfig->ServiceEndpointChangedEvent.bind(ethEngine.get(),&NetworkEngine::ChangeServiceEndpoint);
 	unitManager.OnSendData.bind(ethEngine.get(),&NetworkEngine::SendRfidData);
 	
@@ -263,21 +290,20 @@ int main()
 	//Start to find unit devices
 	//CanEx->SyncAll(SYNC_LIVE, CANExtended::Trigger);
 	
-	
 	//Initialize system heatbeat
 	osTimerId id = osTimerCreate(osTimer(TimerHB), osTimerPeriodic, NULL);
   osTimerStart(id, 500); 
 	
 	osThreadCreate(osThread(UpdateWorker), NULL);
+	osThreadCreate(osThread(UpdateUnits), NULL);
 	
+	//Search all units
 	for(int8_t i=1;i<0x7f;++i)
 	{
 		CanEx->Sync(i|0x100, SYNC_LIVE, CANExtended::Trigger);
 		osDelay(100);
 	}
 	
-	osThreadCreate(osThread(UpdateUnits), NULL);
-
   while(1) 
 	{
 		net_main();

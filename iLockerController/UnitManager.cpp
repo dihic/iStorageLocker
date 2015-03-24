@@ -50,6 +50,11 @@ namespace IntelliStorage
 	{
 		for (UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
 		{
+//			if (!it->second->DataFirstArrival())
+//			{
+//				it->second->RequestData();
+//				continue;
+//			}
 			if (it->second->DoorChanged())
 			{
 				if (it->second->GetDoorState() == 0)	//Closed after open

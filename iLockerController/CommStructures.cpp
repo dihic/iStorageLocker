@@ -7,6 +7,7 @@ namespace IntelliStorage
 	CLAIM_CLASS(NodeList);
 	CLAIM_CLASS(RfidDataBson);
 	CLAIM_CLASS(CommandResult);
+	CLAIM_CLASS(StrCommand);
 
 	void CommStructures::Register()
 	{
@@ -15,6 +16,7 @@ namespace IntelliStorage
 		REGISTER_CLASS(NodeList);
 		REGISTER_CLASS(RfidDataBson);
 		REGISTER_CLASS(CommandResult);
+		REGISTER_CLASS(StrCommand);
 	}
 }
 	

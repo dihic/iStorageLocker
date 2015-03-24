@@ -20,7 +20,7 @@ namespace IntelliStorage
 			WorkThreadDef.reset(new osThreadDef_t);
 			WorkThreadDef->pthread = WorkThread;
 			WorkThreadDef->tpriority = osPriorityNormal;
-			WorkThreadDef->instances = 4;
+			WorkThreadDef->instances = 1;
 			WorkThreadDef->stacksize = 0;
 		}
 	}
