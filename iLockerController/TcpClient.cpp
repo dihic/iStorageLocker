@@ -152,6 +152,7 @@ extern "C"
 #ifdef DEBUG_PRINT
 				cout<<"Aborted Tcp connection!"<<endl;
 #endif
+				client->AbortConnection();
 				break;
 			case tcpEventACK:
 				// Previously sent data acknowledged
@@ -231,7 +232,7 @@ void TcpClient::TxProcessor()
 //	osEvent evt= osSignalWait(0xff, 0);
 //	if (evt.status != osEventSignal && allowTry == false)
 //		return;
-	if (!ack)
+	if (!ack && !tcp_check_send(tcpSocket))
 		return;
 	osEvent evt = osMailGet(mailSid, 0);        // wait for mail to send
 	if (evt.status != osEventMail)
@@ -386,11 +387,9 @@ void TcpClient::AbortConnection()
 		// This TCP connection needs to close immediately
 		tcp_abort (tcpSocket);
 //		// Socket will not be needed any more 
-		tcp_release_socket (tcpSocket);
-		tcp_table.erase(tcpSocket);
-		tcpSocket = NULL;
-		
-		//net_initialize();
+//		tcp_release_socket (tcpSocket);
+//		tcp_table.erase(tcpSocket);
+//		tcpSocket = NULL;
 	}
 }
 

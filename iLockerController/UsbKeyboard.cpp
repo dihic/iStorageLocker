@@ -31,7 +31,7 @@ void Keyboard::USBH_Thread (void const *arg) {
     con = USBH_HID_GetDeviceStatus(0) == usbOK;  /* Get kbd connection status */
     if ((con ^ con_ex) & 1) {                /* If connection status changed  */
       priority = osThreadGetPriority (osThreadGetId());
-      osThreadSetPriority (osThreadGetId(), osPriorityAboveNormal);
+      osThreadSetPriority (osThreadGetId(), osPriorityNormal);
       if (con) {
         //USBH_HID_Write (0,(uint8_t *)&out,1);/* Turn on NUM LED               */
         cout<<"Keyboard connected"<<endl;
@@ -44,7 +44,7 @@ void Keyboard::USBH_Thread (void const *arg) {
       con_ex -= 2;                           /* Decrement initial time        */
       if ((con_ex <= 1) && (!con)) {         /* If initial time expired       */
         priority = osThreadGetPriority (osThreadGetId());
-        osThreadSetPriority (osThreadGetId(), osPriorityAboveNormal);
+        osThreadSetPriority (osThreadGetId(), osPriorityNormal);
         cout<<"No keyboard connected ..."<<endl;
         osThreadSetPriority (osThreadGetId(), priority);
         con_ex = con;
