@@ -13,6 +13,7 @@ namespace Audio
 	typedef FastDelegate1<uint8_t, uint32_t> AccessCB;
 	void Setup();
 	void Play(uint8_t index);
+	bool IsBusy();
 	VS10XX::ReadDataCB &ReadDataDelegate();
 	AccessCB &AccessDelegate();
 }

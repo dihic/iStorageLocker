@@ -87,6 +87,8 @@ void ReadKBLine(string command)
 #ifdef DEBUG_PRINT
 	cout<<command<<endl;
 #endif
+	if (Audio::IsBusy())
+		return;
 	switch (CommandState)
 	{
 		case 0:
@@ -223,14 +225,25 @@ osThreadDef(UpdateWorker, osPriorityNormal, 1, 0);
 
 static void UpdateUnits(void const *argument)  //Prevent missing status
 {
-	//osDelay(3000);
 	while(1)
 	{
 		CanEx->Poll();
 		unitManager.Traversal();	//Update all units
+		osThreadYield();
 	}
 }
 osThreadDef(UpdateUnits, osPriorityNormal, 1, 0);
+
+//static void UpdateNetwork(void const *argument) 
+//{
+//	osDelay(3000);
+//	while(1)
+//	{
+//		
+//		osThreadYield();
+//	}
+//}
+//osThreadDef(UpdateNetwork, osPriorityHigh, 1, 0);
 
 int main()
 {
@@ -304,11 +317,13 @@ int main()
 		osDelay(100);
 	}
 	
+	//osThreadCreate(osThread(UpdateNetwork), NULL);
+	
   while(1) 
 	{
 		net_main();
     ethEngine->Process();
-		net_main();
+		//net_main();
 		osThreadYield();
   }
 }

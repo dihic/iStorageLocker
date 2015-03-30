@@ -105,4 +105,11 @@ namespace Audio
 			codecs->Play(audioSize);
 	}
 	
+	bool IsBusy()
+	{
+		if (codecs.get()==NULL)
+			return false;
+		return codecs->IsBusy();
+	}
+	
 }
