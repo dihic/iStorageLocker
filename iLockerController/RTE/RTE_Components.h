@@ -4,7 +4,7 @@
  *      *** Do not modify ! ***
  *
  * Project: 'iStorageLockerController' 
- * Target:  'Debug' 
+ * Target:  'Release' 
  */
 
 #ifndef RTE_COMPONENTS_H
