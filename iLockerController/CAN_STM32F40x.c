@@ -352,7 +352,14 @@ CAN_ERROR CAN_hw_wr (U32 ctrl, CAN_msg *msg)  {
 		hCAN->pTxMsg->StdId = msg->id & 0x7ff;
 	}
 	
-	if (HAL_CAN_Transmit_IT(hCAN) != HAL_OK)
+	HAL_StatusTypeDef result = HAL_CAN_Transmit_IT(hCAN);
+	while (result == HAL_TIMEOUT)
+	{
+		osDelay(5);
+		result = HAL_CAN_Transmit_IT(hCAN);
+	}
+//	if (HAL_CAN_Transmit_IT(hCAN) != HAL_OK)
+	if (result != HAL_OK)
 		return CAN_TX_BUSY_ERROR;
 	return CAN_OK;
 }
@@ -609,45 +616,46 @@ void CAN2_SCE_IRQHandler (void )
 
 void HAL_CAN_TxCpltCallback(CAN_HandleTypeDef* hcan)
 {
-	CAN_msg *ptrmsg;
-	osEvent event;
-	/* If there is a message in the mailbox ready for send, read the 
-     message from the mailbox and send it			 */
-#if (RTE_CAN1 == 1)
-	if (hcan == &hCAN1)
-	{
-		event = osMailGet(MBX_tx_ctrl[__CTRL1-1], 0);
-    if (event.status == osEventMail) 
-		{
-			ptrmsg = (CAN_msg *)event.value.p;
-      CAN_hw_wr(__CTRL1, ptrmsg);
-			osMailFree(MBX_tx_ctrl[__CTRL1-1], ptrmsg);
-    }
-		else
-		{
-			osSemaphoreRelease(wr_sem[__CTRL1-1]);
-			hcan->Instance->IER &= ~CAN_IER_TMEIE;             /* disable  TME interrupt */ 
-		}
-		return;
-	}
-#endif
-#if (RTE_CAN2 == 1)
-	if (hcan == &hCAN2)
-	{
-		event = osMailGet(MBX_tx_ctrl[__CTRL2-1], 0);
-    if (event.status == osEventMail) 
-		{
-			ptrmsg = event.value.p;
-      CAN_hw_wr(__CTRL2, ptrmsg);
-			osMailFree(MBX_tx_ctrl[__CTRL2-1], ptrmsg);
-    }
-		else
-		{
-			osSemaphoreRelease(wr_sem[__CTRL2-1]);
-			hcan->Instance->IER &= ~CAN_IER_TMEIE;             /* disable  TME interrupt */ 
-		}
-	}
-#endif
+//	CAN_msg *ptrmsg;
+//	osEvent event;
+//	/* If there is a message in the mailbox ready for send, read the 
+//     message from the mailbox and send it			 */
+//#if (RTE_CAN1 == 1)
+//	if (hcan == &hCAN1)
+//	{
+//		event = osMailGet(MBX_tx_ctrl[__CTRL1-1], 0);
+//    while (event.status == osEventMail) 
+//		{
+//			ptrmsg = (CAN_msg *)event.value.p;
+//      CAN_hw_wr(__CTRL1, ptrmsg);
+//			osMailFree(MBX_tx_ctrl[__CTRL1-1], ptrmsg);
+//			event = osMailGet(MBX_tx_ctrl[__CTRL1-1], 0);
+//    }
+////		else
+////		{
+//		osSemaphoreRelease(wr_sem[__CTRL1-1]);
+////			hcan->Instance->IER &= ~CAN_IER_TMEIE;             /* disable  TME interrupt */ 
+////		}
+//		return;
+//	}
+//#endif
+//#if (RTE_CAN2 == 1)
+//	if (hcan == &hCAN2)
+//	{
+//		event = osMailGet(MBX_tx_ctrl[__CTRL2-1], 0);
+//    if (event.status == osEventMail) 
+//		{
+//			ptrmsg = event.value.p;
+//      CAN_hw_wr(__CTRL2, ptrmsg);
+//			osMailFree(MBX_tx_ctrl[__CTRL2-1], ptrmsg);
+//    }
+//		else
+//		{
+//			osSemaphoreRelease(wr_sem[__CTRL2-1]);
+//			hcan->Instance->IER &= ~CAN_IER_TMEIE;             /* disable  TME interrupt */ 
+//		}
+//	}
+//#endif
 }
 
 void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan)
@@ -759,6 +767,17 @@ static CAN_ERROR CAN1_Set(CAN_msg *msg, U16 timeout)
 }
 
 static CAN_ERROR CAN1_Receive (CAN_msg *msg, U16 timeout)  {
+	CAN_msg *ptrmsg;
+	osEvent event;
+	event = osMailGet(MBX_tx_ctrl[__CTRL1-1], 0);
+	if (event.status == osEventMail) 
+	{
+		ptrmsg = (CAN_msg *)event.value.p;
+		CAN_hw_wr(__CTRL1, ptrmsg);
+		osMailFree(MBX_tx_ctrl[__CTRL1-1], ptrmsg);
+	}
+	else
+		osSemaphoreRelease(wr_sem[__CTRL1-1]);
   return (CAN_pull (1, msg, timeout));
 }
 

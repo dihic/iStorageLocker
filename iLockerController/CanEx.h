@@ -63,23 +63,8 @@ namespace CANExtended
 			RxStruct(boost::shared_ptr<OdEntry> &entry);
 			~RxStruct() {}
 			
-			void SetSegment(uint8_t segmentIndex, const uint8_t *data, uint8_t len)
-			{
-				uint8_t *rxData = Entry->GetVal().get();
-				int pos = 4+segmentIndex*7;
-				if (pos+len > Entry->GetLen())
-					return;
-				memcpy(rxData+pos, data, len);
-				tag[segmentIndex>>5] |= (1<<(segmentIndex&0x1f));
-			}
-				
-			bool IsComplete()
-			{
-				for(int i=0;i<2;++i)
-					if (tag[i]!=0xffffffffu)
-						return false;
-				return true;
-			}
+			void SetSegment(uint8_t segmentIndex, const uint8_t *data, uint8_t len);
+			bool IsComplete();
 			
 			RxStruct(const RxStruct &ref)
 			{
@@ -91,10 +76,6 @@ namespace CANExtended
 	class CanEx
 	{
 		private:
-		
-			//static void MessageReceiverAdapter(void const *argument);
-			//osThreadId thread_id;
-			
 			ARM_DRIVER_CAN &canBus;
 			std::uint16_t DeviceId;
 		

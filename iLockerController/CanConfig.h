@@ -69,7 +69,7 @@
 // <o1> Number of receive objects for CAN <1-1024>
 //      <i> Determines the size of software message buffer for receiving.
 //      <i> Default: 20
-#define CAN_No_SendObjects     32
-#define CAN_No_ReceiveObjects  32
+#define CAN_No_SendObjects     64
+#define CAN_No_ReceiveObjects  64
 
 #endif

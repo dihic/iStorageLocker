@@ -193,34 +193,6 @@ CAN_ERROR CAN_push (U32 ctrl, CAN_msg *msg, U16 timeout)  {
 			osMailFree (MBX_tx_ctrl[ctrl0], ptrmsg);
 			CAN_hw_wr (ctrl, msg);      /* Send message                        */
 		}
-		
-//		/* If message hasn't been sent but timeout expired, deallocate memory  */
-//		if (osMailPut(MBX_tx_ctrl[ctrl0], ptrmsg) != osOK) 
-//		{
-//			if (osMailFree (MBX_tx_ctrl[ctrl0], ptrmsg) != osOK)
-//				return CAN_DEALLOC_MEM_ERROR;
-//			return CAN_ALLOC_MEM_ERROR;
-//		} 
-//		else 
-//		{
-//			/* Check once again if transmit hardware is ready for transmission   */
-//			if (CAN_hw_tx_empty (ctrl) == CAN_OK)  /* Transmit hw free for send */ 
-//			{
-//				event = osMailGet (MBX_tx_ctrl[ctrl0], 0);
-//				if (event.status != osEventMail) 
-//				{
-//					osSemaphoreRelease(wr_sem[ctrl0]); /* Return a token back to semaphore  */
-//					return CAN_OK;              			 /* Message was sent from IRQ already */
-//				}
-//				ptrmsg = (CAN_msg *)event.value.p;
-//				if (osMailFree (MBX_tx_ctrl[ctrl0], ptrmsg) != osOK) 
-//				{
-//					osSemaphoreRelease(wr_sem[ctrl0]); /* Return a token back to semaphore  */
-//					return CAN_DEALLOC_MEM_ERROR;
-//				}
-//				CAN_hw_wr (ctrl, msg);      /* Send message                        */
-//			}
-//		}
   }
   return CAN_OK;
 }

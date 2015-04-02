@@ -195,6 +195,7 @@ void HeartbeatArrival(uint16_t sourceId, CANExtended::DeviceState state)
 	static int dc =0;
 	if (state != CANExtended::Operational)
 		return;
+	CanEx->Sync(sourceId, SYNC_LIVE, CANExtended::Trigger); //Confirm & Stop
 	if (sourceId & 0x100)
 	{
 		boost::shared_ptr<StorageUnit> unit = unitManager.FindUnit(sourceId);
@@ -209,7 +210,6 @@ void HeartbeatArrival(uint16_t sourceId, CANExtended::DeviceState state)
 			unit->WriteCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceWriteResponse);
 			unitManager.Add(sourceId, unit);
 		}
-		CanEx->Sync(sourceId, SYNC_LIVE, CANExtended::Trigger); //Confirm & Stop
 	}
 }
 

@@ -3,7 +3,7 @@
 
 using namespace std;
 
-#define CAN_SEND_TIMEOUT	100
+#define CAN_SEND_TIMEOUT	500
 
 namespace CANExtended
 {
@@ -20,6 +20,24 @@ namespace CANExtended
 			tag[i>>5] &= ~(1<<(i&0x1f));
 	}
 	
+	void RxStruct::SetSegment(uint8_t segmentIndex, const uint8_t *data, uint8_t len)
+	{
+		uint8_t *rxData = Entry->GetVal().get();
+		int pos = 4+segmentIndex*7;
+		if (pos+len > Entry->GetLen())
+			return;
+		memcpy(rxData+pos, data, len);
+		tag[segmentIndex>>5] |= (1<<(segmentIndex&0x1f));
+	}
+	
+	bool RxStruct::IsComplete()
+	{
+		for(int i=0;i<2;++i)
+			if (tag[i]!=0xffffffffu)
+				return false;
+		return true;
+	}
+	
 	osMutexDef(CanbusMutex);
 	
 	CanEx::CanEx(ARM_DRIVER_CAN &bus, uint16_t id) : canBus(bus), DeviceId(id) 
@@ -30,41 +48,20 @@ namespace CANExtended
 		canBus.SetRxObject(2, 0x000 , DATA_TYPE | EXTENDED_TYPE, 0xfffu);  /* Enable reception  */
 																															
 		canBus.Start();                      /* Start controller 1                  */
-		
-//		osThreadDef_t thread_t;
-//		thread_t.pthread = MessageReceiverAdapter;
-//		thread_t.tpriority = osPriorityNormal;
-//		thread_t.instances = 1;
-//		thread_t.stacksize = 0;
-//		thread_id = osThreadCreate(&thread_t, this);
 	}
 	
 	CanEx::~CanEx()
 	{
-//		osThreadTerminate(thread_id);
 		osMutexDelete(mutex_id);
 	}
-
-//extern "C"
-//{
-//	void CanEx::MessageReceiverAdapter(void const *argument)  
-//	{
-//		CanEx &comm= *const_cast<CanEx *>(reinterpret_cast<const CanEx *>(argument));
-//		CAN_msg msg;
-//		for(;;)
-//		{
-//			if (comm.canBus.Receive(&msg, 10) == CAN_OK)  
-//				comm.MessageReceiver(msg);
-//			//osThreadYield();
-//			//osDelay(100);
-//		}
-//	}
-//}
 
 	void CanEx::Poll()
 	{
 		CAN_msg msg;
-		if (canBus.Receive(&msg, 1) == CAN_OK)  
+		osMutexWait(mutex_id, osWaitForever);
+		CAN_ERROR result = canBus.Receive(&msg, 1);
+		osMutexRelease(mutex_id);
+		if (result == CAN_OK)  
 			MessageReceiver(msg);
 	}
 	
