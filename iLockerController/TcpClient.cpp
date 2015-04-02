@@ -33,7 +33,7 @@ TcpClient::TcpClient(const std::uint8_t *endpoint)
 	semaphoreSid = osSemaphoreCreate(osSemaphore(SemaphoreSendTcp), TCP_BUFFER_NUM*2);
 	semaphoreRid = osSemaphoreCreate(osSemaphore(SemaphoreReceiveTcp), TCP_BUFFER_NUM);
 	memcpy(serverIp, endpoint, 4);
-	//Driver_ETH_PHY0.SetMode(ARM_ETH_MODE_10M_FULL_DUPLEX);
+	//Driver_ETH_PHY0.SetMode(ARM_ETH_PHY_SPEED_10M|ARM_ETH_PHY_DUPLEX_FULL);
 	//Driver_ETH_PHY0.SetMode(ARM_ETH_PHY_AUTO_NEGOTIATE);
 	osDelay(50);
 	txCount = TCP_BUFFER_NUM*2;
@@ -152,10 +152,12 @@ extern "C"
 #ifdef DEBUG_PRINT
 				cout<<"Aborted Tcp connection!"<<endl;
 #endif
-				client->AbortConnection();
 				break;
 			case tcpEventACK:
 				// Previously sent data acknowledged
+#ifdef DEBUG_PRINT
+				cout<<"ACK accepted!"<<endl;
+#endif
 				client->ack = true;
 //				client->FirstSend = true;
 //				osSignalSet(client->threadTx_id, 0xff);
@@ -191,26 +193,6 @@ extern "C"
 	}
 }
 
-//void TcpClient::RxProcessor(void const *argument) 
-//{
-//	TcpClient &client= *reinterpret_cast<TcpClient *>(const_cast<void *>(argument));
-//	while (1)
-//	{
-//		osEvent evt = osMailGet(client.mailRid, osWaitForever);        // wait for mail to receive
-//		if (evt.status == osEventMail)
-//		{
-//			TcpBuffer *rbuf = reinterpret_cast<TcpBuffer *>(evt.value.p);
-//			client.DataReciever(rbuf->data, rbuf->len);
-//			osMailFree(client.mailRid, rbuf);
-//			osSemaphoreRelease(client.semaphoreRid);
-//			__sync_fetch_and_add(&(client.rxCount), 1);
-//#ifdef DEBUG_PRINT
-//			cout<<"RX Release "<<client.rxCount<<endl;
-//#endif
-//		}
-//	}
-//}
-
 void TcpClient::DataReceiver()
 {
 	osEvent evt = osMailGet(mailRid, 0);        // if any mail to receive
@@ -229,9 +211,6 @@ void TcpClient::DataReceiver()
 
 void TcpClient::TxProcessor()
 {
-//	osEvent evt= osSignalWait(0xff, 0);
-//	if (evt.status != osEventSignal && allowTry == false)
-//		return;
 	if (!ack && !tcp_check_send(tcpSocket))
 		return;
 	osEvent evt = osMailGet(mailSid, 0);        // wait for mail to send
@@ -284,7 +263,6 @@ void TcpClient::TcpProcessor(void const *argument)
 		if (client.tcpSocket && client.conn)
 		{
 			client.conn = false;
-			//tcp_close(client.tcpSocket);
 			client.AbortConnection();
 		}
 		return;
@@ -331,25 +309,10 @@ void TcpClient::TcpProcessor(void const *argument)
 
 void TcpClient::Start()
 {
-//	if (threadRx_id == NULL)
-//	{
-//		osThreadDef_t thread_t;
-//		thread_t.pthread = RxProcessor;
-//		thread_t.tpriority = osPriorityNormal;
-//		thread_t.instances = 1;
-//		thread_t.stacksize = 0;
-//		threadRx_id = osThreadCreate(&thread_t, this);
-//	}
-//  threadTx_id = osThreadGetId();
 }
 
 void TcpClient::Stop()
 {
-//	if (threadRx_id)
-//	{
-//		osThreadTerminate(threadRx_id);
-//		threadRx_id = NULL;
-//	}
 	if (tcpSocket)
 	{
 		tcp_close(tcpSocket);
@@ -361,7 +324,7 @@ bool TcpClient::SendData(const uint8_t *buf, size_t len)
 {
 	if (!IsConnected())
 		return false;
-	
+
 	return true;
 }
 
@@ -387,9 +350,9 @@ void TcpClient::AbortConnection()
 		// This TCP connection needs to close immediately
 		tcp_abort (tcpSocket);
 //		// Socket will not be needed any more 
-//		tcp_release_socket (tcpSocket);
-//		tcp_table.erase(tcpSocket);
-//		tcpSocket = NULL;
+		tcp_release_socket (tcpSocket);
+		tcp_table.erase(tcpSocket);
+		tcpSocket = NULL;
 	}
 }
 
