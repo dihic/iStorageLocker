@@ -36,7 +36,7 @@ boost::shared_ptr<SimpleFS> fileSystem;
 
 UnitManager unitManager;
 
-static uint8_t CommandState = 0;
+volatile uint8_t CommandState = 0;
 
 void CommandTimeoutDetector()
 {

@@ -71,16 +71,16 @@ namespace Skewworks
 			const VSConfig *config;
 			int duration;      // Duration of file playing (in seconds)
       int position;      // Current Play Position (in seconds)
-      bool busy;      // Playing a file when true
-      bool pause;     // Paused when true
+      volatile bool busy;      // Playing a file when true
+      volatile bool pause;     // Paused when true
       long rawSize;
       long readSoFar;
       int bitrate;
       int mpegLayer;
-      bool stop;
+      volatile bool stop;
       int lastPos;
 			
-			bool available;
+			volatile bool available;
       uint8_t cmdBuffer[4];
 			
 			osThreadDef_t workThread;
