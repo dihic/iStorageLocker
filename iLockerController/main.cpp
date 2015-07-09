@@ -85,7 +85,7 @@ void SystemHeartbeat(void const *argument)
 }
 osTimerDef(TimerHB, SystemHeartbeat);
 
-void ReadKBLine(string command)
+bool ReadKBLine(string command)
 {
 	boost::shared_ptr<StorageUnit> unit;
 	string empty;
@@ -93,7 +93,8 @@ void ReadKBLine(string command)
 	cout<<command<<endl;
 #endif
 	if (Audio::IsBusy())
-		return;
+		return false;
+	bool result = false;
 	switch (CommandState)
 	{
 		case 0:
@@ -101,6 +102,7 @@ void ReadKBLine(string command)
 			{
 				CommandState = 1;
 				Audio::Play(AUDIO_SCANID);
+				result = true;
 			}
 			else if (command.find("MAN PUTID") == 0 && command.length() > 9)
 			{
@@ -112,6 +114,7 @@ void ReadKBLine(string command)
 					unit->SetPresId(command);
 					unit->SetNotice(2, false);
 					unit->OpenDoor();
+					result = true;
 				}
 			}
 			else if (command.find("MAN OPEN") == 0)
@@ -124,6 +127,7 @@ void ReadKBLine(string command)
 						Audio::Play(AUDIO_POSITION);
 						unit->SetNotice(2, false);
 						unit->OpenDoor();
+						result = true;
 					}
 				}
 				else
@@ -131,6 +135,7 @@ void ReadKBLine(string command)
 					command.erase(0, 8);
 					if (command == "ALL")
 					{
+						result = true;
 						auto unitList = unitManager.GetList();
 						for(auto it = unitList.begin(); it != unitList.end(); ++it)
 						{
@@ -151,6 +156,7 @@ void ReadKBLine(string command)
 							unit->OpenDoor();
 							if (!unit->IsRfid())
 								unit->SetPresId(empty);
+							result = true;
 						}
 					}
 				}
@@ -168,6 +174,7 @@ void ReadKBLine(string command)
 				}
 				else
 					Audio::Play(AUDIO_NONE);
+				result = true;
 			}
 			break;
 		case 1:
@@ -178,6 +185,7 @@ void ReadKBLine(string command)
 			{
 				//cout<<"existed!"<<endl;
 				Audio::Play(AUDIO_REPEATED);
+				result = true;
 			}
 			else
 			{
@@ -188,11 +196,13 @@ void ReadKBLine(string command)
 					unit->SetPresId(command);
 					unit->SetNotice(2, false);
 					unit->OpenDoor();
+					result = true;
 				}
 			}
 			CommandState = 0;
 			break;
 	}
+	return result;
 }
 
 void HeartbeatArrival(uint16_t sourceId, const std::uint8_t *data, std::uint8_t len)

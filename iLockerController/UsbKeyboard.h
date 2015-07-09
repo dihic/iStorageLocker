@@ -15,7 +15,7 @@ class Keyboard
 		static void USBH_Thread (void const *arg);
 		static void KeyRead_Thread (void const *arg);
 	public:
-		typedef FastDelegate1<std::string> LineReadHandler;
+		typedef FastDelegate1<std::string, bool> LineReadHandler;
 		static LineReadHandler OnLineReadEvent;
 		static void Init();
 		static bool IsConnected() { return con!=0; } 

@@ -18,7 +18,7 @@ namespace IntelliStorage
 			void TcpClientCommandArrival(boost::shared_ptr<std::uint8_t[]> payload, std::size_t size);
 			void WhoAmI();
 		public:
-			typedef FastDelegate1<std::string> StrCommandHandler;
+			typedef FastDelegate1<std::string, bool> StrCommandHandler;
 			StrCommandHandler StrCommandDelegate;
 			NetworkEngine(const std::uint8_t *endpoint, std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > &list);
 			~NetworkEngine() {}
