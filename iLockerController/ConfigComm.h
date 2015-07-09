@@ -1,24 +1,20 @@
 #ifndef _CONFIG_COMM_H
 #define _CONFIG_COMM_H
 
-#include "ISerialComm.h"
-#include "FastDelegate.h"
-
-#include <boost/smart_ptr.hpp>
-#include <boost/make_shared.hpp>
-#include <Driver_USART.h>
-
+#include "UartComm.h"
 
 using namespace fastdelegate;
 
-class ConfigComm : public ISerialComm
+#define CONFIG_BUFFER_SIZE	0x400
+
+class ConfigComm : public UartComm
 {
 	protected:
-		const ARM_DRIVER_USART &uart;
-		static void SignalEventHandler(uint32_t event);
 		static const std::uint8_t dataHeader[5];
+		static boost::shared_ptr<ConfigComm> instance;
+		static void UARTCallback(uint32_t event);
+		ConfigComm(ARM_DRIVER_USART &u);
 	private:
-		
 		enum StateType
 		{
 			StateDelimiter1,
@@ -32,28 +28,25 @@ class ConfigComm : public ISerialComm
 			StateChecksum
 		};
 		
-		uint8_t data[0x400];
-		StateType dataState;
-		uint8_t command;
+		volatile StateType dataState = StateDelimiter1;
 		uint8_t checksum;
 		uint8_t lenIndex;
+		uint8_t command;
 		uint16_t parameterLen;
 		uint16_t parameterIndex;
 		boost::shared_ptr<uint8_t[]> parameters;
-		uint32_t base;
-	  uint8_t *dataOffset;
 	public:
-		typedef FastDelegate3<std::uint8_t, std::uint8_t *, std::size_t> CommandArrivalHandler;
-		CommandArrivalHandler OnCommandArrivalEvent;
-		CommandArrivalHandler OnFileSystemCommandArrivalEvent;
-		ConfigComm(ARM_DRIVER_USART &u);
+		static boost::shared_ptr<ConfigComm> &CreateInstance(ARM_DRIVER_USART &u);
+		static boost::shared_ptr<ConfigComm> &Instance() { return instance; }
+	
+		CommandArrivalHandler OnFileCommandArrivalEvent;
+		
 		virtual ~ConfigComm();
-		virtual void Start();
-		virtual void Stop();
-		virtual void DataReceiver();
-		virtual bool SendData(const std::uint8_t *data,std::size_t len);
-		virtual bool SendData(std::uint8_t command, const std::uint8_t *data,std::size_t len);
-		bool SendFSData(uint8_t command,const uint8_t *data, size_t len);
+
+		virtual void DataProcess(std::uint8_t byte) override;
+		virtual bool SendData(const std::uint8_t *data,std::size_t len) override;
+		virtual bool SendData(std::uint8_t command, const std::uint8_t *data,std::size_t len) override;
+		bool SendFileData(uint8_t command,const uint8_t *data, size_t len);
 };
 
 #endif

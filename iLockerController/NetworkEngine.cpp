@@ -1,13 +1,13 @@
 #include "NetworkEngine.h"
 #include "MemStream.h"
 #include "Bson.h"
-//#include "Driver_ETH_PHY.h"
 #include <ctime>
 #include <cstring>
+#include "System.h"
+#include <rl_net_lib.h>
+extern ETH_CFG eth0_config;
 
 using namespace std;
-
-//extern ARM_DRIVER_ETH_PHY Driver_ETH_PHY0;
 
 namespace IntelliStorage
 {	
@@ -24,35 +24,41 @@ namespace IntelliStorage
 		static uint64_t t = 0;
 		++t;
 		memcpy(HB+0x0b, &t, 8);
-		tcp.SendData(HeartBeatCode, HB, 0x14);
+		tcp.SendData((uint8_t)CodeType::HeartBeatCode, HB, 0x14);
 	}
 	
 	void NetworkEngine::WhoAmI()
 	{
-		static const uint8_t ME[0x14]={0x14, 0x00, 0x00, 0x00, 0x12, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x00,
-																	 0x03, 0x01, 0x02, 0x01, 			// Locker 0x03, iStorage 0x01, TCM 0x02, 0x01 Pharmacy Products
-																	 0x00, 0x00, 0x00, 0x00, 0x00};
-		tcp.SendData(HeartBeatCode, ME, 0x14);
+		boost::shared_ptr<SyetemInfo> info(new SyetemInfo);
+		info->Product = "iStorageLocker";
+		info->Version = (FW_VERSION_MAJOR<<8)|FW_VERSION_MINOR;
+		info->CpuId = SCB->CPUID;
+		for (auto i=0;i<6;++i)
+			info->MacAddress.push_back(eth0_config.MacAddr[i]);
+		size_t bufferSize = 0;
+		auto buffer = BSON::Bson::Serialize(info, bufferSize);
+		if (buffer!=nullptr && bufferSize>0)
+			tcp.SendData((uint8_t)CodeType::CodeWhoAmI, buffer.get(), bufferSize);
 	}
 	
 	
 	void NetworkEngine::SendRfidData(boost::shared_ptr<StorageUnit> unit)
 	{
-		if (unit.get() == NULL)
+		if (unit==nullptr)
 			return;
 		size_t bufferSize = 0;
 		boost::shared_ptr<RfidData> rfid = unit->GetCard();
-		if (rfid.get() == NULL)
+		if (rfid==nullptr)
 			return;
 		boost::shared_ptr<RfidDataBson> rfidBson(new RfidDataBson);
 		rfidBson->NodeId = rfid->NodeId;
 		rfidBson->State = rfid->State;
 		rfidBson->PresId = rfid->PresId;
 		rfidBson->CardId = rfid->CardId;
-		boost::shared_ptr<uint8_t[]> buffer = BSON::Bson::Serialize(rfidBson, bufferSize);
+		auto buffer = BSON::Bson::Serialize(rfidBson, bufferSize);
 		unit->UpdateCard();
-		if (buffer.get()!=NULL && bufferSize>0)
-			tcp.SendData(RfidDataCode, buffer.get(), bufferSize);
+		if (buffer!=nullptr && bufferSize>0)
+			tcp.SendData((uint8_t)CodeType::RfidDataCode, buffer.get(), bufferSize);
 	}
 	
 	void NetworkEngine::Process()
@@ -69,46 +75,20 @@ namespace IntelliStorage
 		switch (attr)
 		{
 			case DeviceAttribute::Notice:
-				response->Command = RfidDataCode;
+				response->Command = (uint8_t)CodeType::RfidDataCode;
 				break;
 			default:
 				return;
 		}
 		
-		boost::shared_ptr<uint8_t[]> buffer;
 		size_t bufferSize = 0;
-		buffer = BSON::Bson::Serialize(response, bufferSize);
-		if (buffer.get()!=NULL && bufferSize>0)
-			tcp.SendData(CommandResponse, buffer.get(), bufferSize);
+		auto buffer = BSON::Bson::Serialize(response, bufferSize);
+		if (buffer!=nullptr && bufferSize>0)
+			tcp.SendData((uint8_t)CodeType::CommandResponse, buffer.get(), bufferSize);
 	}
 	
 	void NetworkEngine::DeviceReadResponse(CanDevice &device, std::uint16_t attr, const boost::shared_ptr<std::uint8_t[]> &data, std::size_t size)
 	{
-//		boost::shared_ptr<CommandResult> response;
-//		boost::shared_ptr<uint8_t[]> buffer;
-//		size_t bufferSize = 0;
-//		
-//		if (data.get()==NULL || size==0)
-//		{
-//			response.reset(new CommandResult);
-//			response->NodeId = device.DeviceId;
-//			response->Result = false;
-//			switch (attr)
-//			{
-//				default:
-//					return;
-//			}
-//			buffer = BSON::Bson::Serialize(response, bufferSize);
-//			if (buffer.get()!=NULL && bufferSize>0)
-//				tcp.SendData(CommandResponse, buffer.get(), bufferSize);
-//			return;
-//		}
-		
-//		switch (attr)
-//		{
-//			default:
-//				break;
-//		}
 	}
 	
 	void NetworkEngine::TcpClientCommandArrival(boost::shared_ptr<std::uint8_t[]> payload, std::size_t size)
@@ -133,7 +113,7 @@ namespace IntelliStorage
 		bool found = false;
 		switch (code)
 		{
-			case QueryNodeId:
+			case CodeType::QueryNodeId:
 				nodeList.reset(new NodeList);
 				for(it = unitList.begin(); it != unitList.end(); ++it)
 				{
@@ -141,8 +121,8 @@ namespace IntelliStorage
 					nodeList->NodeIds.Add(id);
 				}
 				buffer = BSON::Bson::Serialize(nodeList, bufferSize);
-				if (buffer.get()!=NULL && bufferSize>0)
-					tcp.SendData(code, buffer.get(), bufferSize);
+				if (buffer!=nullptr && bufferSize>0)
+					tcp.SendData(payload[0], buffer.get(), bufferSize);
 				
 				for (it = unitList.begin(); it!= unitList.end(); ++it)
 				{
@@ -155,13 +135,13 @@ namespace IntelliStorage
 					rfidBson->PresId = rfidData->PresId;
 					rfidBson->CardId = rfidData->CardId;
 					buffer = BSON::Bson::Serialize(rfidBson, bufferSize);
-					if (buffer.get()!=NULL && bufferSize>0)
-						tcp.SendData(RfidDataCode, buffer.get(), bufferSize);
+					if (buffer!=nullptr && bufferSize>0)
+						tcp.SendData((uint8_t)CodeType::RfidDataCode, buffer.get(), bufferSize);
 				}
 				break;
-			case RfidDataCode:
+			case CodeType::RfidDataCode:
 				BSON::Bson::Deserialize(stream, rfidBson);
-				if (rfidBson.get()!=NULL)
+				if (rfidBson!=nullptr)
 				{
 					rfidData.reset(new RfidData);
 					rfidData->NodeId = rfidBson->NodeId;
@@ -179,18 +159,18 @@ namespace IntelliStorage
 					else
 					{
 						response.reset(new CommandResult);
-						response->Command = RfidDataCode;
+						response->Command = (uint8_t)CodeType::RfidDataCode;
 						response->NodeId = 0;
 						response->Result = false;
 						buffer = BSON::Bson::Serialize(response, bufferSize);
-						if (buffer.get()!=NULL && bufferSize>0)
-							tcp.SendData(CommandResponse, buffer.get(), bufferSize);
+						if (buffer!=nullptr && bufferSize>0)
+							tcp.SendData((uint8_t)CodeType::CommandResponse, buffer.get(), bufferSize);
 					}
 				}
 				break;
-			case QueryRfid:
+			case CodeType::QueryRfid:
 				BSON::Bson::Deserialize(stream, nodeQuery);
-				if (nodeQuery.get()!=NULL)
+				if (nodeQuery!=nullptr)
 				{
 					it = unitList.find(nodeQuery->NodeId);
 					if (it != unitList.end())
@@ -201,19 +181,20 @@ namespace IntelliStorage
 						rfidBson->PresId = rfidData->PresId;
 						rfidBson->CardId = rfidData->CardId;
 						buffer = BSON::Bson::Serialize(rfidBson, bufferSize);
-						if (buffer.get()!=NULL && bufferSize>0)
-							tcp.SendData(RfidDataCode, buffer.get(), bufferSize);
+						if (buffer!=nullptr && bufferSize>0)
+							tcp.SendData((uint8_t)CodeType::RfidDataCode, buffer.get(), bufferSize);
 					}
 				}
-			case BarcodeCommand:
+				break;
+			case CodeType::BarcodeCommand:
 				BSON::Bson::Deserialize(stream, strcommand);
-				if (strcommand.get()!=NULL)
+				if (strcommand!=nullptr)
 				{
 					if (StrCommandDelegate)
 						StrCommandDelegate(strcommand->Command);
 				}
 				break;
-			case WhoAmICode:
+			case CodeType::CodeWhoAmI:
 				WhoAmI();
 				break;
 			default:

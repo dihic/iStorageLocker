@@ -105,7 +105,7 @@ void PowerAmp::SetMainVolume(uint8_t val)
 	if (val<100)
 		dB = MAX_DB + (val<<1);
 	//Set Main Volume
-	uint8_t volume[3] = {0x07, dB>>8, dB&0xff };
+	uint8_t volume[3] = {0x07, (uint8_t)(dB>>8), (uint8_t)(dB&0xff) };
 	WriteData(volume, 3);
 }
 

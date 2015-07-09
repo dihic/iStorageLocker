@@ -111,8 +111,6 @@ namespace Skewworks
 		}
 	}		
 	
-	#define AUDIO_BLOCK_SIZE 0x200
-	
 	void VS10XX::PlayLoop(void const *arg)
   {
 		VS10XX *vs = (VS10XX *)arg;
@@ -127,10 +125,8 @@ namespace Skewworks
 		
 		vs->CommandWrite(SCI_DECODE_TIME, 0);	// Reset DECODE_TIME
 		
-		uint8_t *block1 = new uint8_t[AUDIO_BLOCK_SIZE];
-		uint8_t *block2 = new uint8_t[AUDIO_BLOCK_SIZE];
-		uint8_t *current = block1;
-		uint8_t *backup = block2;
+		uint8_t *current = vs->block1;
+		uint8_t *backup = vs->block2;
 		
 		uint32_t seg = vs->rawSize / AUDIO_BLOCK_SIZE;
 		uint32_t dem = vs->rawSize % AUDIO_BLOCK_SIZE;
@@ -164,15 +160,15 @@ namespace Skewworks
 				osSignalClear(osThreadGetId(), 0x01); //Thread syncing
 				offset += AUDIO_BLOCK_SIZE;
 				//Swap current and backup
-				if (current == block1)
+				if (current == vs->block1)
 				{
-					current = block2;
-					backup = block1;
+					current = vs->block2;
+					backup = vs->block1;
 				}
 				else
 				{
-					current = block1;
-					backup = block2;
+					current = vs->block1;
+					backup = vs->block2;
 				}
 			}
 			if (!vs->stop)
@@ -195,9 +191,6 @@ namespace Skewworks
 			vs->SendData(current, 32);
 			control = vs->CommandRead(SCI_MODE);
 		} while (control & SM_CANCEL);
-		
-		delete[] block1;
-		delete[] block2;
 		
 		vs->busy = false;
 		vs->readSoFar = -1;
@@ -223,7 +216,11 @@ namespace Skewworks
 		if (busy)
 			return false;
 		rawSize = size;
-		osThreadCreate(&workThread, this);
+		osThreadId tid;
+		do
+		{
+			tid = osThreadCreate(&workThread, this);
+		} while (tid==NULL);
 		return true;
 	}
 	

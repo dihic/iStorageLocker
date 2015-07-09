@@ -2,26 +2,28 @@
 #include <cstring>
 #include <Driver_ETH_PHY.h>
 
-#define TCP_SEGMENT_SIZE   1460
-
-#define TCP_WINDOW_SIZE    4380
+#ifdef DEBUG_PRINT
+#include <iostream>
+#endif
 
 using namespace std;
 
-#define TCP_BUFFER_NUM 16
+#define TCP_BUFFER_NUM 			16
 
-osMailQDef(MailSendTcp   , TCP_BUFFER_NUM*2, TcpBuffer);
-osMailQDef(MailReceiveTcp, TCP_BUFFER_NUM  , TcpBuffer);
+osMailQDef(MailSendTcp   , TCP_BUFFER_NUM, TcpBuffer);
+osMailQDef(MailReceiveTcp, TCP_BUFFER_NUM, TcpBuffer);
 osSemaphoreDef(SemaphoreSendTcp);
 osSemaphoreDef(SemaphoreReceiveTcp);
 
 extern ARM_DRIVER_ETH_PHY Driver_ETH_PHY0;
 
+volatile bool LinkState = false;
+
 const std::uint8_t TcpClient::DataHeader[2] = {0xAA, 0x44};
 
 map<std::int32_t,TcpClient *> TcpClient::tcp_table;
 
-//std::uint32_t TcpClient::windowSize = TCP_WINDOW_SIZE;
+//std::uint32_t TcpClient::windowSize = TCP_RECEIVE_WIN_SIZE;
  
 TcpClient::TcpClient(const std::uint8_t *endpoint)
 	: serverPort(endpoint[4]|(endpoint[5]<<8)),
@@ -30,13 +32,13 @@ TcpClient::TcpClient(const std::uint8_t *endpoint)
 {
 	mailSid 		 = osMailCreate(osMailQ(MailSendTcp), NULL);
 	mailRid 		 = osMailCreate(osMailQ(MailReceiveTcp), NULL);
-	semaphoreSid = osSemaphoreCreate(osSemaphore(SemaphoreSendTcp), TCP_BUFFER_NUM*2);
+	semaphoreSid = osSemaphoreCreate(osSemaphore(SemaphoreSendTcp), TCP_BUFFER_NUM);
 	semaphoreRid = osSemaphoreCreate(osSemaphore(SemaphoreReceiveTcp), TCP_BUFFER_NUM);
 	memcpy(serverIp, endpoint, 4);
 	Driver_ETH_PHY0.SetMode(ARM_ETH_PHY_SPEED_10M|ARM_ETH_PHY_DUPLEX_FULL);
 	//Driver_ETH_PHY0.SetMode(ARM_ETH_PHY_AUTO_NEGOTIATE);
-	osDelay(50);
-	txCount = TCP_BUFFER_NUM*2;
+	osDelay(10);
+	txCount = TCP_BUFFER_NUM;
 	rxCount = TCP_BUFFER_NUM;
 	Start();
 }
@@ -122,6 +124,17 @@ void TcpClient::DataReciever(const boost::shared_ptr<uint8_t[]> &data, uint32_t 
 
 extern "C"
 {
+	void eth_link_notify(uint32_t if_num, ethLinkEvent event)
+	{
+#ifdef DEBUG_PRINT
+		if (event==ethLinkDown)
+			cout<<"Ethernet Link Down"<<endl;
+		else
+			cout<<"Ethernet Link Up"<<endl;
+#endif
+		LinkState = event!=ethLinkDown;
+	}
+	
 	// Notify the user application about TCP socket events.
 	uint32_t TcpClient::tcp_cb_func(int32_t socket, tcpEvent event, const uint8_t *buf, uint32_t len) 
 	{
@@ -181,10 +194,10 @@ extern "C"
 					osMailPut(client->mailRid, mptr);
 				}
 //				windowSize -= len;
-//				if (windowSize < TCP_SEGMENT_SIZE)
+//				if (windowSize < TCP_MAX_SEG_SIZE)
 //				{
 //					tcp_reset_window(socket);
-//					windowSize = TCP_WINDOW_SIZE;
+//					windowSize = TCP_RECEIVE_WIN_SIZE;
 //				}
 				break;
 		}
@@ -258,7 +271,7 @@ void TcpClient::TcpProcessor(void const *argument)
 //		client.threadTx_id = osThreadGetId();
 	
 	//Make sure Ethernet get linked
-	if (Driver_ETH_PHY0.GetLinkState() == ARM_ETH_LINK_DOWN)
+	if (!LinkState)
 	{
 		if (client.tcpSocket && client.conn)
 		{
@@ -340,7 +353,7 @@ void TcpClient::AbortConnection()
 		osSemaphoreRelease(semaphoreSid);
 		evt = osMailGet(mailSid, 0);
 	}
-	txCount = TCP_BUFFER_NUM*2;
+	txCount = TCP_BUFFER_NUM;
 #ifdef DEBUG_PRINT
 	cout<<"TX all Released "<<txCount<<endl;
 #endif
@@ -368,10 +381,7 @@ bool TcpClient::SendData(uint8_t command, const uint8_t *buf, size_t len)
 	uint8_t sum = 0;
 	payload[0] = DataHeader[0];
 	payload[1] = DataHeader[1];
-	payload[2] = len & 0xff;
-	payload[3] = (len>>8) & 0xff;
-	payload[4] = (len>>16) & 0xff;
-	payload[5] = (len>>24) & 0xff;
+	memcpy(payload.get()+2, &len, 4);
 	payload[6] = command;
 	for (int i=0;i<7;++i)
 		sum += payload[i];
@@ -390,7 +400,7 @@ bool TcpClient::SendData(uint8_t command, const uint8_t *buf, size_t len)
 	{
 		if (txCount > 0)	//if out of resource, reset Tcp connection
 			__sync_fetch_and_sub(&txCount, 1);
-		if (osSemaphoreWait(semaphoreSid, 0) <= 0)
+		if (osSemaphoreWait(semaphoreSid, 100) <= 0)
 		{
 #ifdef DEBUG_PRINT
 			cout<<"Out of resources!"<<endl;
@@ -411,7 +421,7 @@ bool TcpClient::SendData(uint8_t command, const uint8_t *buf, size_t len)
 		{
 			if (txCount > 0)	//if out of resource, reset Tcp connection
 				__sync_fetch_and_sub(&txCount, 1);
-			if (osSemaphoreWait(semaphoreSid, 0) <= 0)
+			if (osSemaphoreWait(semaphoreSid, 100) <= 0)
 			{
 #ifdef DEBUG_PRINT
 				cout<<"Out of resources!"<<endl;
@@ -431,4 +441,3 @@ bool TcpClient::SendData(uint8_t command, const uint8_t *buf, size_t len)
 		}	
 	return true;
 }
-

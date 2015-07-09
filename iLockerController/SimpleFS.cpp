@@ -8,7 +8,7 @@
 SimpleFS::SimpleFS(ARM_DRIVER_SPI *spi, GPIO_TypeDef *cs_port, uint16_t cs_pin, ConfigComm *u)
 	: index(0), currentHeader(0), currentSize(0), comm(*u)
 {
-	comm.OnFileSystemCommandArrivalEvent.bind(this, &SimpleFS::CommandArrival);
+	comm.OnFileCommandArrivalEvent.bind(this, &SimpleFS::CommandArrival);
 	flash.reset(new Spansion::Flash(spi, cs_port, cs_pin));
 	boost::shared_ptr<uint8_t []> buffer = boost::make_shared<uint8_t []>(36);
 	
@@ -48,7 +48,7 @@ void SimpleFS::CommandArrival(std::uint8_t command,std::uint8_t *parameters,std:
 	{
 		case CommandFormat:
 			Format();
-			comm.SendFSData(command, &index, 1);
+			comm.SendFileData(command, &index, 1);
 			break;
 		case CommandCreateNew:
 			if (len == 4)
@@ -58,7 +58,7 @@ void SimpleFS::CommandArrival(std::uint8_t command,std::uint8_t *parameters,std:
 			}
 			else
 				index = 0;
-			comm.SendFSData(command, &index, 1);
+			comm.SendFileData(command, &index, 1);
 			break;
 		case CommandAccess:
 			if (len == 1)
@@ -69,12 +69,12 @@ void SimpleFS::CommandArrival(std::uint8_t command,std::uint8_t *parameters,std:
 				buffer[1] = (fileSize>>8) & 0xff;
 				buffer[2] = (fileSize>>16) & 0xff;
 				buffer[3] = (fileSize>>24) & 0xff;
-				comm.SendFSData(command, buffer.get(), 4);
+				comm.SendFileData(command, buffer.get(), 4);
 			}
 			break;
 		case CommandErase:
 			index = Erase();
-			comm.SendFSData(command, &index, 1);
+			comm.SendFileData(command, &index, 1);
 			break;
 		case CommandWrite:
 			if (len>4)
@@ -84,7 +84,7 @@ void SimpleFS::CommandArrival(std::uint8_t command,std::uint8_t *parameters,std:
 			}
 			else
 				index = 0;
-			comm.SendFSData(command, &index, 1);
+			comm.SendFileData(command, &index, 1);
 			break;
 		case CommandRead:
 			if (len == 6)
@@ -93,7 +93,7 @@ void SimpleFS::CommandArrival(std::uint8_t command,std::uint8_t *parameters,std:
 				fileSize = parameters[4] | (parameters[5]<<8);
 				buffer = boost::make_shared<uint8_t []>(fileSize);
 				ReadFile(offset, buffer.get(), fileSize);
-				comm.SendFSData(command, buffer.get(), fileSize);
+				comm.SendFileData(command, buffer.get(), fileSize);
 			}
 			break;
 		case CommandInfo:
@@ -101,7 +101,7 @@ void SimpleFS::CommandArrival(std::uint8_t command,std::uint8_t *parameters,std:
 			buffer[0] = available;
 			buffer[1] = count;
 			flash->FastReadMemory(36+count*8, buffer.get()+2, 4);
-			comm.SendFSData(command, buffer.get(), 6);
+			comm.SendFileData(command, buffer.get(), 6);
 			break;
 		default:
 			break;

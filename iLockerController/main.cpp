@@ -28,6 +28,11 @@ using namespace std;
 #define AUDIO_REPEATED	5
 #define AUDIO_NONE			6
 
+namespace boost
+{
+	void throw_exception(const std::exception& ex) {}
+}
+
 boost::shared_ptr<CANExtended::CanEx> CanEx;
 boost::shared_ptr<NetworkConfig> ethConfig;
 boost::shared_ptr<NetworkEngine> ethEngine;
@@ -72,7 +77,7 @@ void SystemHeartbeat(void const *argument)
 	CommandTimeoutDetector();
 	
 	//Send a heart beat per 10s
-	if ((ethEngine.get()!=NULL) && ++hbcount>20)
+	if (ethEngine!=nullptr && ++hbcount>20)
 	{
 		hbcount = 0;
  		ethEngine->SendHeartBeat();
@@ -101,7 +106,7 @@ void ReadKBLine(string command)
 			{
 				command.erase(0, 9);
 				unit = unitManager.FindEmptyUnit();
-				if (unit.get()!=NULL)
+				if (unit!=nullptr)
 				{
 					Audio::Play(AUDIO_POSITION);
 					unit->SetPresId(command);
@@ -114,7 +119,7 @@ void ReadKBLine(string command)
 				if (command.length() == 8)
 				{
 					unit = unitManager.FindEmptyUnit();
-					if (unit.get()!=NULL)
+					if (unit!=nullptr)
 					{
 						Audio::Play(AUDIO_POSITION);
 						unit->SetNotice(2, false);
@@ -126,8 +131,8 @@ void ReadKBLine(string command)
 					command.erase(0, 8);
 					if (command == "ALL")
 					{
-						std::map<std::uint16_t, boost::shared_ptr<StorageUnit> > unitList = unitManager.GetList();
-						for(UnitManager::UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
+						auto unitList = unitManager.GetList();
+						for(auto it = unitList.begin(); it != unitList.end(); ++it)
 						{
 							it->second->SetNotice(2, false);
 							it->second->OpenDoor();
@@ -140,7 +145,7 @@ void ReadKBLine(string command)
 					{
 						uint16_t id = atoi(command.c_str()) | 0x0100;
 						unit = unitManager.FindUnit(id);
-						if (unit.get()!=NULL)
+						if (unit!=nullptr)
 						{
 							unit->SetNotice(2, false);
 							unit->OpenDoor();
@@ -153,7 +158,7 @@ void ReadKBLine(string command)
 			else	//User fetching
 			{
 				unit = unitManager.FindUnit(command);
-				if (unit.get()!=NULL)
+				if (unit!=nullptr)
 				{
 					Audio::Play(AUDIO_GET);
 					unit->SetNotice(2, false);
@@ -169,7 +174,7 @@ void ReadKBLine(string command)
 			if (command.substr(0,3) == "MAN")
 				break;
 			unit = unitManager.FindUnit(command);
-			if (unit.get()!=NULL)
+			if (unit!=nullptr)
 			{
 				//cout<<"existed!"<<endl;
 				Audio::Play(AUDIO_REPEATED);
@@ -177,7 +182,7 @@ void ReadKBLine(string command)
 			else
 			{
 				unit = unitManager.FindEmptyUnit();
-				if (unit.get()!=NULL)
+				if (unit!=nullptr)
 				{
 					Audio::Play(AUDIO_POSITION);
 					unit->SetPresId(command);
@@ -190,22 +195,23 @@ void ReadKBLine(string command)
 	}
 }
 
-void HeartbeatArrival(uint16_t sourceId, CANExtended::DeviceState state)
+void HeartbeatArrival(uint16_t sourceId, const std::uint8_t *data, std::uint8_t len)
 {
 	static int dc =0;
+	CANExtended::DeviceState state = static_cast<CANExtended::DeviceState>(data[0]);
 	if (state != CANExtended::Operational)
 		return;
 	CanEx->Sync(sourceId, SYNC_LIVE, CANExtended::Trigger); //Confirm & Stop
 	if (sourceId & 0x100)
 	{
-		boost::shared_ptr<StorageUnit> unit = unitManager.FindUnit(sourceId);
-		if (unit.get() == NULL)
+		auto unit = unitManager.FindUnit(sourceId);
+		if (unit!=nullptr)
 		{
 #ifdef DEBUG_PRINT
 			cout<<"#"<<++dc<<" DeviceID: "<<(sourceId & 0xff)<<" Added"<<endl;
 #endif
-			unit.reset(new StorageUnit(*CanEx, sourceId));
-			CanEx->AddDevice(unit);
+			unit.reset(new StorageUnit(CanEx, sourceId));
+			CanEx->RegisterDevice(unit);
 			unit->ReadCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceReadResponse);
 			unit->WriteCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceWriteResponse);
 			unitManager.Add(sourceId, unit);
@@ -257,7 +263,7 @@ int main()
 	Keyboard::Init();
 	Keyboard::OnLineReadEvent.bind(&ReadKBLine);
 	
-	configComm.reset(new ConfigComm(Driver_USART2));
+	configComm = ConfigComm::CreateInstance(Driver_USART2);
 	configComm->Start();
 	
 	fileSystem.reset(new SimpleFS(&Driver_SPI2, GPIOB, GPIO_PIN_12, configComm.get()));
@@ -323,7 +329,6 @@ int main()
 	{
 		net_main();
     ethEngine->Process();
-		//net_main();
 		osThreadYield();
   }
 }

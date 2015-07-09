@@ -46,7 +46,7 @@ namespace IntelliStorage
 			static const std::uint8_t CardArrival = 0x80;
 			static const std::uint8_t CardLeft    = 0x81;
 		
-			StorageUnit(CANExtended::CanEx &ex, std::uint16_t id);
+			StorageUnit(boost::shared_ptr<CANExtended::CanEx> &ex, std::uint16_t id);
 			virtual ~StorageUnit() {}
 			
 			void SetNotice(uint8_t level, bool force);
@@ -79,10 +79,12 @@ namespace IntelliStorage
 			
 			void RequestData()
 			{
-				canex.Sync(DeviceId, SYNC_DATA, CANExtended::Trigger);
+				auto ex = canex.lock();
+				if (ex != nullptr)
+					ex->Sync(DeviceId, SYNC_DATA, CANExtended::Trigger);
 			}
 			
-			virtual void ProcessRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> entry);
+			virtual void ProcessRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> &entry) override;
 	};
 }
 

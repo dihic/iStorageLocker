@@ -8,7 +8,7 @@ using namespace std;
 namespace IntelliStorage
 {
 
-	StorageUnit::StorageUnit(CANExtended::CanEx &ex, uint16_t id)
+	StorageUnit::StorageUnit(boost::shared_ptr<CANExtended::CanEx> &ex, uint16_t id)
 		:	CanDevice(ex, id), lastCardType(0), 
 			blinking(false),cardChanged(false),doorChanged(false),dataArrival(false)
 	{
@@ -84,9 +84,8 @@ namespace IntelliStorage
 		}
 	}
 
-	void StorageUnit::ProcessRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> entry)
+	void StorageUnit::ProcessRecievedEvent(boost::shared_ptr<CANExtended::OdEntry> &entry)
 	{
-		CanDevice::ProcessRecievedEvent(entry);
 		dataArrival = true;
 		
 		std::uint8_t *rawData = entry->GetVal().get();

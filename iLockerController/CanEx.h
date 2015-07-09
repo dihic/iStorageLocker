@@ -18,14 +18,13 @@ namespace CANExtended
 	class ICanDevice
 	{
 		protected:
-			CanEx &canex;
-			ICanDevice(CanEx &ex, std::uint16_t deviceId)
-				: canex(ex),DeviceId(deviceId)
+			ICanDevice(std::uint16_t deviceId)
+				: DeviceId(deviceId)
 			{}
 		public:
-			std::uint16_t DeviceId;
-			virtual void ResponseRecievedEvent(boost::shared_ptr<OdEntry> entry) = 0;
-			virtual void ProcessRecievedEvent(boost::shared_ptr<OdEntry> entry) = 0;
+			const std::uint16_t DeviceId;
+			virtual void ResponseRecievedEvent(boost::shared_ptr<OdEntry> &entry) = 0;
+			virtual void ProcessRecievedEvent(boost::shared_ptr<OdEntry> &entry) = 0;
 			virtual ~ICanDevice() {}
 	};
 	
@@ -91,7 +90,7 @@ namespace CANExtended
 			
 			void Transmit(std::uint32_t command,std::uint16_t targetId,OdEntry &entry);
 		public:
-			typedef FastDelegate2<std::uint16_t,DeviceState> HeartbeatArrivalHandler;
+			typedef FastDelegate3<std::uint16_t, const std::uint8_t *, std::uint8_t> HeartbeatArrivalHandler;
 			HeartbeatArrivalHandler HeartbeatArrivalEvent;
 			CanEx(ARM_DRIVER_CAN &bus, std::uint16_t id);
 			~CanEx();
@@ -103,7 +102,7 @@ namespace CANExtended
 			void Broadcast(OdEntry &entry);
 			void SyncAll(std::uint16_t index, SyncMode mode);
       void Sync(std::uint16_t syncId, std::uint16_t index, SyncMode mode);
-			void AddDevice(const boost::shared_ptr<ICanDevice> device) { DeviceNetwork[device->DeviceId] = device; }
+			void RegisterDevice(const boost::shared_ptr<ICanDevice> &device) { DeviceNetwork[device->DeviceId] = device; }
 	};
 }
 #endif

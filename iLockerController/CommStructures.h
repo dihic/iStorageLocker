@@ -6,7 +6,7 @@
 
 namespace IntelliStorage
 {
-	enum CodeType
+	enum class CodeType
 	{
 		HeartBeatCode = 0x00,          //class HeartBeat
 		QueryNodeId = 0x04,     //class NodeList
@@ -14,7 +14,7 @@ namespace IntelliStorage
 		CommandResponse = 0x14,
 		QueryRfid = 0x15,
 		BarcodeCommand = 0x20,
-		WhoAmICode = 0xff,
+		CodeWhoAmI = 0xFD,
 	};
 
 	DECLARE_CLASS(HeartBeat)
@@ -26,6 +26,23 @@ namespace IntelliStorage
 			}
 			virtual ~HeartBeat() {}
 			std::uint64_t times;
+	};
+	
+	DECLARE_CLASS(SyetemInfo)
+	{
+		public:
+			SyetemInfo()
+			{
+				REGISTER_FIELD(Product);
+				REGISTER_FIELD(Version);
+				REGISTER_FIELD(CpuId);
+				REGISTER_FIELD(MacAddress);
+			}
+			virtual ~SyetemInfo() {}
+			std::string Product;
+			std::uint32_t Version;
+ 			std::uint32_t CpuId;
+			Binary MacAddress;
 	};
 
 	DECLARE_CLASS(NodeQuery)

@@ -192,6 +192,18 @@ namespace BSON
 					boost::shared_ptr<float> f = member->GetObject<float>();
 					*f=float(*d);
 				}
+				else if (p->GetType()==typeid(int64_t) && member->GetType()==typeid(uint64_t))
+				{
+					boost::shared_ptr<int64_t> d = p->GetObject<int64_t>();
+					boost::shared_ptr<uint64_t> f = member->GetObject<uint64_t>();
+					*f=uint64_t(*d);
+				}
+				else if (p->GetType()==typeid(int) && member->GetType()==typeid(uint32_t))
+				{
+					boost::shared_ptr<int> d = p->GetObject<int>();
+					boost::shared_ptr<uint32_t> f = member->GetObject<uint32_t>();
+					*f=uint32_t(*d);
+				}
 			}
 			else
 			{
@@ -228,7 +240,7 @@ namespace BSON
 		
 		boost::shared_ptr<DynamicObject::Table> pTable;
 		if (object->IsRaw())
-			pTable.reset(&object->GetTable(), null_deleter());
+			pTable.reset(&object->GetTable(), boost::null_deleter());
 		else
 			pTable.reset(new DynamicObject::Table);
 		
@@ -243,9 +255,6 @@ namespace BSON
 				e.reset(new Element());
 				while(e->Deserialize(stream))
 				{
-//					pBase = new boost::shared_ptr<TypeInfoBase>;
-//					*pBase = e->GetValue();
-					//base = e->GetValue();
 					pTable->insert(pair<string, boost::shared_ptr<TypeInfoBase> >(e->GetKey(), e->GetValue()));
 					e.reset(new Element());
 				}

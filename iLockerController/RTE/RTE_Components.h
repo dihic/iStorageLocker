@@ -12,6 +12,10 @@
 
 #define RTE_CMSIS_RTOS                  /* CMSIS-RTOS */
         #define RTE_CMSIS_RTOS_RTX              /* CMSIS-RTOS Keil RTX */
+#define RTE_Compiler_IO_STDERR          /* Compiler I/O: STDERR */
+        #define RTE_Compiler_IO_STDERR_ITM      /* Compiler I/O: STDERR ITM */
+#define RTE_Compiler_IO_STDOUT          /* Compiler I/O: STDOUT */
+        #define RTE_Compiler_IO_STDOUT_ITM      /* Compiler I/O: STDOUT ITM */
 #define RTE_DEVICE_FRAMEWORK_CLASSIC
 #define RTE_DEVICE_HAL_CAN
 #define RTE_DEVICE_HAL_COMMON

@@ -1,10 +1,10 @@
 /*------------------------------------------------------------------------------
  * MDK Middleware - Component ::Network:Socket
- * Copyright (c) 2004-2014 ARM Germany GmbH. All rights reserved.
+ * Copyright (c) 2004-2015 ARM Germany GmbH. All rights reserved.
  *------------------------------------------------------------------------------
  * Name:    Net_Config_TCP.h
  * Purpose: Network Configuration for TCP Sockets
- * Rev.:    V5.00
+ * Rev.:    V5.0.1
  *----------------------------------------------------------------------------*/
 
 //-------- <<< Use Configuration Wizard in Context Menu >>> --------------------
@@ -14,8 +14,8 @@
 
 //   <o>Number of TCP Sockets <1-20>
 //   <i> Number of available TCP sockets
-//   <i> Default: 5
-#define TCP_NUM_SOCKS           2
+//   <i> Default: 6
+#define TCP_NUM_SOCKS           3
 
 //   <o>Number of Retries <0-20>
 //   <i> How many times TCP module will try to retransmit data

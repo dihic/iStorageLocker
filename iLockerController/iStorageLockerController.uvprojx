@@ -52,7 +52,7 @@
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
           <DebugInformation>1</DebugInformation>
-          <BrowseInformation>1</BrowseInformation>
+          <BrowseInformation>0</BrowseInformation>
           <ListingPath>.\</ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
           <Merge32K>0</Merge32K>
@@ -84,6 +84,8 @@
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
+            <nStopA1X>0</nStopA1X>
+            <nStopA2X>0</nStopA2X>
           </AfterMake>
           <SelectedForBatchBuild>0</SelectedForBatchBuild>
           <SVCSIdString></SVCSIdString>
@@ -350,7 +352,7 @@
             <Optim>1</Optim>
             <oTime>1</oTime>
             <SplitLS>0</SplitLS>
-            <OneElfS>0</OneElfS>
+            <OneElfS>1</OneElfS>
             <Strict>0</Strict>
             <EnumInt>0</EnumInt>
             <PlainCh>0</PlainCh>
@@ -361,6 +363,8 @@
             <uSurpInc>0</uSurpInc>
             <uC99>1</uC99>
             <useXO>0</useXO>
+            <v6Lang>0</v6Lang>
+            <v6LangP>0</v6LangP>
             <VariousControls>
               <MiscControls>--gnu</MiscControls>
               <Define>HSE_VALUE=25000000, DEBUG_PRINT</Define>
@@ -407,12 +411,69 @@
       <Groups>
         <Group>
           <GroupName>Sources</GroupName>
+          <GroupOption>
+            <CommonProperty>
+              <UseCPPCompiler>0</UseCPPCompiler>
+              <RVCTCodeConst>0</RVCTCodeConst>
+              <RVCTZI>0</RVCTZI>
+              <RVCTOtherData>0</RVCTOtherData>
+              <ModuleSelection>0</ModuleSelection>
+              <IncludeInBuild>2</IncludeInBuild>
+              <AlwaysBuild>2</AlwaysBuild>
+              <GenerateAssemblyFile>2</GenerateAssemblyFile>
+              <AssembleAssemblyFile>2</AssembleAssemblyFile>
+              <PublicsOnly>2</PublicsOnly>
+              <StopOnExitCode>11</StopOnExitCode>
+              <CustomArgument></CustomArgument>
+              <IncludeLibraryModules></IncludeLibraryModules>
+              <ComprImg>1</ComprImg>
+            </CommonProperty>
+            <GroupArmAds>
+              <Cads>
+                <interw>2</interw>
+                <Optim>0</Optim>
+                <oTime>2</oTime>
+                <SplitLS>2</SplitLS>
+                <OneElfS>2</OneElfS>
+                <Strict>2</Strict>
+                <EnumInt>2</EnumInt>
+                <PlainCh>2</PlainCh>
+                <Ropi>2</Ropi>
+                <Rwpi>2</Rwpi>
+                <wLevel>2</wLevel>
+                <uThumb>2</uThumb>
+                <uSurpInc>2</uSurpInc>
+                <uC99>2</uC99>
+                <useXO>2</useXO>
+                <v6Lang>0</v6Lang>
+                <v6LangP>0</v6LangP>
+                <VariousControls>
+                  <MiscControls> --cpp11</MiscControls>
+                  <Define></Define>
+                  <Undefine></Undefine>
+                  <IncludePath></IncludePath>
+                </VariousControls>
+              </Cads>
+              <Aads>
+                <interw>2</interw>
+                <Ropi>2</Ropi>
+                <Rwpi>2</Rwpi>
+                <thumb>2</thumb>
+                <SplitLS>2</SplitLS>
+                <SwStkChk>2</SwStkChk>
+                <NoWarn>2</NoWarn>
+                <uSurpInc>2</uSurpInc>
+                <useXO>2</useXO>
+                <VariousControls>
+                  <MiscControls></MiscControls>
+                  <Define></Define>
+                  <Undefine></Undefine>
+                  <IncludePath></IncludePath>
+                </VariousControls>
+              </Aads>
+            </GroupArmAds>
+          </GroupOption>
           <Files>
-            <File>
-              <FileName>Retarget.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>.\Retarget.cpp</FilePath>
-            </File>
             <File>
               <FileName>main.cpp</FileName>
               <FileType>8</FileType>
@@ -432,11 +493,6 @@
               <FileName>NetworkConfig.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\NetworkConfig.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>TypeInfoBase.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>.\TypeInfoBase.cpp</FilePath>
             </File>
             <File>
               <FileName>CanDevice.cpp</FileName>
@@ -478,10 +534,77 @@
               <FileType>8</FileType>
               <FilePath>.\Audio.cpp</FilePath>
             </File>
+            <File>
+              <FileName>UartComm.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\UartComm.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
           <GroupName>BSON</GroupName>
+          <GroupOption>
+            <CommonProperty>
+              <UseCPPCompiler>0</UseCPPCompiler>
+              <RVCTCodeConst>0</RVCTCodeConst>
+              <RVCTZI>0</RVCTZI>
+              <RVCTOtherData>0</RVCTOtherData>
+              <ModuleSelection>0</ModuleSelection>
+              <IncludeInBuild>2</IncludeInBuild>
+              <AlwaysBuild>2</AlwaysBuild>
+              <GenerateAssemblyFile>2</GenerateAssemblyFile>
+              <AssembleAssemblyFile>2</AssembleAssemblyFile>
+              <PublicsOnly>2</PublicsOnly>
+              <StopOnExitCode>11</StopOnExitCode>
+              <CustomArgument></CustomArgument>
+              <IncludeLibraryModules></IncludeLibraryModules>
+              <ComprImg>1</ComprImg>
+            </CommonProperty>
+            <GroupArmAds>
+              <Cads>
+                <interw>2</interw>
+                <Optim>0</Optim>
+                <oTime>2</oTime>
+                <SplitLS>2</SplitLS>
+                <OneElfS>2</OneElfS>
+                <Strict>2</Strict>
+                <EnumInt>2</EnumInt>
+                <PlainCh>2</PlainCh>
+                <Ropi>2</Ropi>
+                <Rwpi>2</Rwpi>
+                <wLevel>2</wLevel>
+                <uThumb>2</uThumb>
+                <uSurpInc>2</uSurpInc>
+                <uC99>2</uC99>
+                <useXO>2</useXO>
+                <v6Lang>0</v6Lang>
+                <v6LangP>0</v6LangP>
+                <VariousControls>
+                  <MiscControls> --cpp11</MiscControls>
+                  <Define></Define>
+                  <Undefine></Undefine>
+                  <IncludePath></IncludePath>
+                </VariousControls>
+              </Cads>
+              <Aads>
+                <interw>2</interw>
+                <Ropi>2</Ropi>
+                <Rwpi>2</Rwpi>
+                <thumb>2</thumb>
+                <SplitLS>2</SplitLS>
+                <SwStkChk>2</SwStkChk>
+                <NoWarn>2</NoWarn>
+                <uSurpInc>2</uSurpInc>
+                <useXO>2</useXO>
+                <VariousControls>
+                  <MiscControls></MiscControls>
+                  <Define></Define>
+                  <Undefine></Undefine>
+                  <IncludePath></IncludePath>
+                </VariousControls>
+              </Aads>
+            </GroupArmAds>
+          </GroupOption>
           <Files>
             <File>
               <FileName>BsonBinary.cpp</FileName>
@@ -518,10 +641,77 @@
               <FileType>8</FileType>
               <FilePath>.\bson\MemStream.cpp</FilePath>
             </File>
+            <File>
+              <FileName>TypeInfoBase.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\bson\TypeInfoBase.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
           <GroupName>Driver</GroupName>
+          <GroupOption>
+            <CommonProperty>
+              <UseCPPCompiler>0</UseCPPCompiler>
+              <RVCTCodeConst>0</RVCTCodeConst>
+              <RVCTZI>0</RVCTZI>
+              <RVCTOtherData>0</RVCTOtherData>
+              <ModuleSelection>0</ModuleSelection>
+              <IncludeInBuild>2</IncludeInBuild>
+              <AlwaysBuild>2</AlwaysBuild>
+              <GenerateAssemblyFile>2</GenerateAssemblyFile>
+              <AssembleAssemblyFile>2</AssembleAssemblyFile>
+              <PublicsOnly>2</PublicsOnly>
+              <StopOnExitCode>11</StopOnExitCode>
+              <CustomArgument></CustomArgument>
+              <IncludeLibraryModules></IncludeLibraryModules>
+              <ComprImg>1</ComprImg>
+            </CommonProperty>
+            <GroupArmAds>
+              <Cads>
+                <interw>2</interw>
+                <Optim>0</Optim>
+                <oTime>2</oTime>
+                <SplitLS>2</SplitLS>
+                <OneElfS>2</OneElfS>
+                <Strict>2</Strict>
+                <EnumInt>2</EnumInt>
+                <PlainCh>2</PlainCh>
+                <Ropi>2</Ropi>
+                <Rwpi>2</Rwpi>
+                <wLevel>2</wLevel>
+                <uThumb>2</uThumb>
+                <uSurpInc>2</uSurpInc>
+                <uC99>2</uC99>
+                <useXO>2</useXO>
+                <v6Lang>0</v6Lang>
+                <v6LangP>0</v6LangP>
+                <VariousControls>
+                  <MiscControls> --cpp11</MiscControls>
+                  <Define></Define>
+                  <Undefine></Undefine>
+                  <IncludePath></IncludePath>
+                </VariousControls>
+              </Cads>
+              <Aads>
+                <interw>2</interw>
+                <Ropi>2</Ropi>
+                <Rwpi>2</Rwpi>
+                <thumb>2</thumb>
+                <SplitLS>2</SplitLS>
+                <SwStkChk>2</SwStkChk>
+                <NoWarn>2</NoWarn>
+                <uSurpInc>2</uSurpInc>
+                <useXO>2</useXO>
+                <VariousControls>
+                  <MiscControls></MiscControls>
+                  <Define></Define>
+                  <Undefine></Undefine>
+                  <IncludePath></IncludePath>
+                </VariousControls>
+              </Aads>
+            </GroupArmAds>
+          </GroupOption>
           <Files>
             <File>
               <FileName>CanEx.cpp</FileName>
@@ -539,16 +729,6 @@
               <FilePath>.\UsbKeyboard.cpp</FilePath>
             </File>
             <File>
-              <FileName>CAN_STM32F40x.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\CAN_STM32F40x.c</FilePath>
-            </File>
-            <File>
-              <FileName>Driver_CAN.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Driver_CAN.c</FilePath>
-            </File>
-            <File>
               <FileName>tas5727.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\tas5727.cpp</FilePath>
@@ -561,10 +741,28 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>CDriver</GroupName>
+          <Files>
+            <File>
+              <FileName>CAN_STM32F40x.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\CAN_STM32F40x.c</FilePath>
+            </File>
+            <File>
+              <FileName>Driver_CAN.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Driver_CAN.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>::CMSIS</GroupName>
         </Group>
         <Group>
           <GroupName>::CMSIS Driver</GroupName>
+        </Group>
+        <Group>
+          <GroupName>::Compiler</GroupName>
         </Group>
         <Group>
           <GroupName>::Device</GroupName>
@@ -655,6 +853,8 @@
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
+            <nStopA1X>0</nStopA1X>
+            <nStopA2X>0</nStopA2X>
           </AfterMake>
           <SelectedForBatchBuild>0</SelectedForBatchBuild>
           <SVCSIdString></SVCSIdString>
@@ -932,6 +1132,8 @@
             <uSurpInc>0</uSurpInc>
             <uC99>1</uC99>
             <useXO>0</useXO>
+            <v6Lang>0</v6Lang>
+            <v6LangP>0</v6LangP>
             <VariousControls>
               <MiscControls>--gnu</MiscControls>
               <Define>HSE_VALUE=25000000</Define>
@@ -980,11 +1182,6 @@
           <GroupName>Sources</GroupName>
           <Files>
             <File>
-              <FileName>Retarget.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>.\Retarget.cpp</FilePath>
-            </File>
-            <File>
               <FileName>main.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\main.cpp</FilePath>
@@ -1003,11 +1200,6 @@
               <FileName>NetworkConfig.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\NetworkConfig.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>TypeInfoBase.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>.\TypeInfoBase.cpp</FilePath>
             </File>
             <File>
               <FileName>CanDevice.cpp</FileName>
@@ -1049,6 +1241,11 @@
               <FileType>8</FileType>
               <FilePath>.\Audio.cpp</FilePath>
             </File>
+            <File>
+              <FileName>UartComm.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\UartComm.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1089,6 +1286,11 @@
               <FileType>8</FileType>
               <FilePath>.\bson\MemStream.cpp</FilePath>
             </File>
+            <File>
+              <FileName>TypeInfoBase.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\bson\TypeInfoBase.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1110,16 +1312,6 @@
               <FilePath>.\UsbKeyboard.cpp</FilePath>
             </File>
             <File>
-              <FileName>CAN_STM32F40x.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\CAN_STM32F40x.c</FilePath>
-            </File>
-            <File>
-              <FileName>Driver_CAN.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Driver_CAN.c</FilePath>
-            </File>
-            <File>
               <FileName>tas5727.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\tas5727.cpp</FilePath>
@@ -1132,10 +1324,28 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>CDriver</GroupName>
+          <Files>
+            <File>
+              <FileName>CAN_STM32F40x.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\CAN_STM32F40x.c</FilePath>
+            </File>
+            <File>
+              <FileName>Driver_CAN.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Driver_CAN.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>::CMSIS</GroupName>
         </Group>
         <Group>
           <GroupName>::CMSIS Driver</GroupName>
+        </Group>
+        <Group>
+          <GroupName>::Compiler</GroupName>
         </Group>
         <Group>
           <GroupName>::Device</GroupName>
@@ -1151,6 +1361,31 @@
   </Targets>
 
   <RTE>
+    <packages>
+      <filter>
+        <targetInfos/>
+      </filter>
+      <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.3.0">
+        <targetInfos>
+          <targetInfo name="Debug" versionMatchMode="fixed"/>
+        </targetInfos>
+      </package>
+      <package name="ARM_Compiler" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="1.0.0">
+        <targetInfos>
+          <targetInfo name="Debug"/>
+        </targetInfos>
+      </package>
+      <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.4.0">
+        <targetInfos>
+          <targetInfo name="Debug" versionMatchMode="fixed"/>
+        </targetInfos>
+      </package>
+      <package name="STM32F4xx_DFP" schemaVersion="1.3" url="http://www.keil.com/pack" vendor="Keil" version="2.4.0">
+        <targetInfos>
+          <targetInfo name="Debug" versionMatchMode="fixed"/>
+        </targetInfos>
+      </package>
+    </packages>
     <apis>
       <api Capiversion="2.01" Cclass="CMSIS Driver" Cgroup="Ethernet" exclusive="0">
         <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.2.0"/>
@@ -1225,43 +1460,43 @@
           <targetInfo name="Release"/>
         </targetInfos>
       </component>
-      <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="CORE" Cvariant="Debug" Cvendor="Keil" Cversion="6.3.0" condition="CMSIS Core with RTOS">
-        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.3.0"/>
+      <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="CORE" Cvariant="Debug" Cvendor="Keil" Cversion="6.4.0" condition="CMSIS Core with RTOS">
+        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.4.0"/>
         <targetInfos>
           <targetInfo name="Debug"/>
           <targetInfo name="Release"/>
         </targetInfos>
       </component>
-      <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="Interface" Csub="ETH" Cvendor="Keil" Cversion="6.3.0" condition="Network Driver ETH" maxInstances="1">
-        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.3.0"/>
+      <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="Interface" Csub="ETH" Cvendor="Keil" Cversion="6.4.0" condition="Network Driver ETH" maxInstances="1">
+        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.4.0"/>
         <targetInfos>
           <targetInfo name="Debug"/>
           <targetInfo name="Release"/>
         </targetInfos>
       </component>
-      <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="Socket" Csub="TCP" Cvendor="Keil" Cversion="6.3.0" condition="Network Interface">
-        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.3.0"/>
+      <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="Socket" Csub="TCP" Cvendor="Keil" Cversion="6.4.0" condition="Network Interface">
+        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.4.0"/>
         <targetInfos>
           <targetInfo name="Debug"/>
           <targetInfo name="Release"/>
         </targetInfos>
       </component>
-      <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="CORE" Cvendor="Keil" Cversion="6.3.0" condition="USB Core">
-        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.3.0"/>
+      <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="CORE" Cvendor="Keil" Cversion="6.4.0" condition="USB Core">
+        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.4.0"/>
         <targetInfos>
           <targetInfo name="Debug"/>
           <targetInfo name="Release"/>
         </targetInfos>
       </component>
-      <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="Host" Cvendor="Keil" Cversion="6.3.0" condition="USB Core and Host Driver" maxInstances="4">
-        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.3.0"/>
+      <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="Host" Cvendor="Keil" Cversion="6.4.0" condition="USB Core and Host Driver" maxInstances="4">
+        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.4.0"/>
         <targetInfos>
           <targetInfo name="Debug"/>
           <targetInfo name="Release"/>
         </targetInfos>
       </component>
-      <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="Host" Csub="HID" Cvendor="Keil" Cversion="6.3.0" condition="USB Host">
-        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.3.0"/>
+      <component Cbundle="MDK-Pro" Cclass="USB" Cgroup="Host" Csub="HID" Cvendor="Keil" Cversion="6.4.0" condition="USB Host">
+        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.4.0"/>
         <targetInfos>
           <targetInfo name="Debug"/>
           <targetInfo name="Release"/>
@@ -1312,6 +1547,20 @@
       </component>
       <component Capiversion="2.00" Cclass="CMSIS Driver" Cgroup="USB Host" Csub="High-speed" Cvendor="Keil" Cversion="2.07" condition="STM32F4 CMSIS_Driver USB1">
         <package name="STM32F4xx_DFP" schemaVersion="1.3" url="http://www.keil.com/pack" vendor="Keil" version="2.4.0"/>
+        <targetInfos>
+          <targetInfo name="Debug"/>
+          <targetInfo name="Release"/>
+        </targetInfos>
+      </component>
+      <component Cclass="Compiler" Cgroup="I/O" Csub="STDERR" Cvariant="ITM" Cvendor="Keil" Cversion="1.0.0" condition="ARMCC Cortex-M with ITM">
+        <package name="ARM_Compiler" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="1.0.0"/>
+        <targetInfos>
+          <targetInfo name="Debug"/>
+          <targetInfo name="Release"/>
+        </targetInfos>
+      </component>
+      <component Cclass="Compiler" Cgroup="I/O" Csub="STDOUT" Cvariant="ITM" Cvendor="Keil" Cversion="1.0.0" condition="ARMCC Cortex-M with ITM">
+        <package name="ARM_Compiler" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="1.0.0"/>
         <targetInfos>
           <targetInfo name="Debug"/>
           <targetInfo name="Release"/>
@@ -1424,10 +1673,10 @@
       </component>
     </components>
     <files>
-      <file attr="config" category="source" name="CMSIS_RTX\Templates\RTX_Conf_CM.c" version="4.70">
+      <file attr="config" category="source" name="CMSIS\RTOS\RTX\Templates\RTX_Conf_CM.c" version="4.70.1">
         <instance index="0">RTE\CMSIS\RTX_Conf_CM.c</instance>
-        <component Cclass="CMSIS" Cgroup="RTOS" Csub="Keil RTX" Cvendor="ARM" Cversion="4.75.0" condition="CMSIS Core"/>
-        <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.2.0"/>
+        <component Cclass="CMSIS" Cgroup="RTOS" Csub="Keil RTX" Cvendor="ARM" Cversion="4.78.0" condition="Cortex-M Device Startup"/>
+        <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="4.3.0"/>
         <targetInfos>
           <targetInfo name="Debug"/>
           <targetInfo name="Release"/>
@@ -1487,10 +1736,10 @@
           <targetInfo name="Release"/>
         </targetInfos>
       </file>
-      <file attr="config" category="source" name="Network\Config\Net_Config_TCP.h" version="5.00">
+      <file attr="config" category="source" name="Network\Config\Net_Config_TCP.h" version="5.0.1">
         <instance index="0">RTE\Network\Net_Config_TCP.h</instance>
-        <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="Socket" Csub="TCP" Cvendor="Keil" Cversion="6.2.0" condition="Network Interface"/>
-        <package name="MDK-Middleware" schemaVersion="1.0" url="http://www.keil.com/pack/" vendor="Keil" version="6.2.0"/>
+        <component Cbundle="MDK-Pro" Cclass="Network" Cgroup="Socket" Csub="TCP" Cvendor="Keil" Cversion="6.4.0" condition="Network Interface"/>
+        <package name="MDK-Middleware" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="Keil" version="6.4.0"/>
         <targetInfos>
           <targetInfo name="Debug"/>
           <targetInfo name="Release"/>

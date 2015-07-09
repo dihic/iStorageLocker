@@ -15,6 +15,8 @@
 #define SDI_END_FILL_BYTES_FLAC 12288
 #define SDI_END_FILL_BYTES       2052
 
+#define AUDIO_BLOCK_SIZE 0x200
+
 using namespace fastdelegate;
 
 namespace Skewworks
@@ -82,6 +84,9 @@ namespace Skewworks
 			
 			volatile bool available;
       uint8_t cmdBuffer[4];
+			
+			uint8_t block1[AUDIO_BLOCK_SIZE];
+			uint8_t block2[AUDIO_BLOCK_SIZE];
 			
 			osThreadDef_t workThread;
 			

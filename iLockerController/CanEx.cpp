@@ -1,5 +1,8 @@
 #include "CanEx.h"
 #include <stm32f4xx.h> 
+#ifdef DEBUG_PRINT
+#include <iostream>
+#endif
 
 using namespace std;
 
@@ -89,8 +92,10 @@ namespace CANExtended
 			memcpy(msg.data+4, val, entryLen);
 			osMutexWait(mutex_id, osWaitForever);
 			result = canBus.Send(&msg, CAN_SEND_TIMEOUT);
+#ifdef DEBUG_PRINT
 			if (result)
 				cout<<"CAN tranmit error: "<<result<<endl;
+#endif
 			osMutexRelease(mutex_id);
 			return;
 		}
@@ -104,8 +109,10 @@ namespace CANExtended
 			++segment;
 		osMutexWait(mutex_id, osWaitForever);
 		result = canBus.Send(&msg, CAN_SEND_TIMEOUT);
+#ifdef DEBUG_PRINT
 		if (result)
 			cout<<"CAN tranmit error: "<<result<<endl;
+#endif
 		osMutexRelease(mutex_id);
 		for(int i=0; i<segment; ++i)
 		{
@@ -118,8 +125,10 @@ namespace CANExtended
 			offset += msg.len-1;
 			osMutexWait(mutex_id, osWaitForever);
 			result = canBus.Send(&msg, CAN_SEND_TIMEOUT);
+#ifdef DEBUG_PRINT
 			if (result)
 				cout<<"CAN tranmit error: "<<result<<endl;
+#endif
 			osMutexRelease(mutex_id);
 		}
 	}
@@ -153,7 +162,7 @@ namespace CANExtended
 				{
 					if (msgReceived.len >= 4)
 					{
-						rxEntry.reset( new OdEntry(
+						rxEntry.reset(new OdEntry(
 							(msgReceived.data[1] << 8) | msgReceived.data[0],
 							msgReceived.data[2], 
 							msgReceived.data[3]));
@@ -224,7 +233,7 @@ namespace CANExtended
 				break;
 			case Command::Heartbeat:
 				if (HeartbeatArrivalEvent)
-						HeartbeatArrivalEvent(sourceId, (DeviceState) msgReceived.data[0]);
+						HeartbeatArrivalEvent(sourceId, msgReceived.data, msgReceived.len);
 				break;
       default:
         break;

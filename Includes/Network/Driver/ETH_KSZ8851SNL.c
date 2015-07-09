@@ -1,8 +1,8 @@
 /* ----------------------------------------------------------------------
  * Copyright (C) 2013-2014 ARM Limited. All rights reserved.
  *
- * $Date:        28. August 2014
- * $Revision:    V6.01
+ * $Date:        9. December 2014
+ * $Revision:    V6.02
  *
  * Driver:       Driver_ETH_MACn (default: Driver_ETH_MAC0),
                  Driver_ETH_PHYn (default: Driver_ETH_PHY0)
@@ -20,6 +20,8 @@
  * -------------------------------------------------------------------- */
 
 /* History:
+ *  Version 6.02
+      GetMacAddress function implemented in Ethernet driver
  *  Version 6.01
  *    Corrected invalid power status in MAC_PowerControl
  *  Version 6.00
@@ -389,9 +391,26 @@ static int32_t MAC_PowerControl (ARM_POWER_STATE state) {
   \return      \ref execution_status
 */
 static int32_t MAC_GetMacAddress (ARM_ETH_MAC_ADDR *ptr_addr) {
+  uint16_t val;
 
-  /* Serialized MAC address not available */
-  return ARM_DRIVER_ERROR_UNSUPPORTED;
+  if (!ptr_addr) {
+    /* Invalid parameters */
+    return ARM_DRIVER_ERROR_PARAMETER;
+  }
+
+  val = reg_rd (REG_MARL);
+  ptr_addr->b[5] = (uint8_t)val;
+  ptr_addr->b[4] = (uint8_t)(val >> 8);
+
+  val = reg_rd (REG_MARM);
+  ptr_addr->b[3] = (uint8_t)val;
+  ptr_addr->b[2] = (uint8_t)(val >> 8);
+
+  val = reg_rd (REG_MARH);
+  ptr_addr->b[1] = (uint8_t)val;
+  ptr_addr->b[0] = (uint8_t)(val >> 8);
+
+  return ARM_DRIVER_OK;
 }
 
 /**
@@ -977,7 +996,7 @@ static int32_t PHY_SetMode (uint32_t mode) {
   }
 
   if (mode & ARM_ETH_PHY_ISOLATE) {
-    val |= REG_P1MBCR_DISTX; 	//REG_P1CR_TXIDS;
+    val |= REG_P1CR_TXIDS;
   }
 
   reg_wr (REG_P1MBCR, val);

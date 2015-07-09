@@ -11,11 +11,7 @@
 #include <boost/type_traits.hpp>
 #include <boost/smart_ptr.hpp>
 #include <boost/make_shared.hpp>
-
-struct null_deleter
-{
-	void operator()(void const *) const {}
-};
+#include <boost/core/null_deleter.hpp>
 
 typedef std::vector<std::uint8_t> Binary;
 
@@ -57,7 +53,7 @@ class TypeInfo : public TypeInfoBase
 		static boost::shared_ptr<TypeInfo<T> > Register(T &p)
 		{
 			boost::shared_ptr<TypeInfo<T> > info(new TypeInfo<T>);
-			boost::shared_ptr<T> px(&p, null_deleter());
+			boost::shared_ptr<T> px(&p, boost::null_deleter());
 			info->Ptr = px;
 			return info;
 		}	
@@ -99,7 +95,7 @@ class TypeInfo<Binary> : public TypeInfoBase
 	public:
 		static boost::shared_ptr<TypeInfo<Binary> > Register(Binary &b)
 		{
-			boost::shared_ptr<Binary> bx(&b, null_deleter());
+			boost::shared_ptr<Binary> bx(&b, boost::null_deleter());
 			boost::shared_ptr<TypeInfo<Binary> > info(new TypeInfo<Binary>(bx));
 			return info;
 		}
@@ -272,6 +268,11 @@ public:
 	
 	virtual ~Array() {}
 	
+	void Clear()
+	{
+		pArray->list.clear();
+	}
+	
 	//Add a constant element
 	void Add(const T &element) 
 	{
@@ -346,7 +347,7 @@ extern const char _name_##class_name[]; \
 class class_name : public DynamicBase<class_name, _name_##class_name>
 
 #define CLAIM_CLASS(class_name) \
-const char _name_##class_name[]=#class_name \
+const char _name_##class_name[]=#class_name
 	
 #define DEFINE_CLASS(class_name) \
 char _name_##class_name[]=#class_name; \

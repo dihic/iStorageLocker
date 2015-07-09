@@ -48,7 +48,7 @@ namespace IntelliStorage
 	
 	void UnitManager::Traversal()
 	{
-		for (UnitIterator it = unitList.begin(); it != unitList.end(); ++it)
+		for (auto it = unitList.begin(); it != unitList.end(); ++it)
 		{
 //			if (!it->second->DataFirstArrival())
 //			{
