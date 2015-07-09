@@ -107,14 +107,24 @@ bool ReadKBLine(string command)
 			else if (command.find("MAN PUTID") == 0 && command.length() > 9)
 			{
 				command.erase(0, 9);
-				unit = unitManager.FindEmptyUnit();
+				unit = unitManager.FindUnit(command);
 				if (unit!=nullptr)
 				{
-					Audio::Play(AUDIO_POSITION);
-					unit->SetPresId(command);
-					unit->SetNotice(2, false);
-					unit->OpenDoor();
+					//cout<<"existed!"<<endl;
+					Audio::Play(AUDIO_REPEATED);
 					result = true;
+				}
+				else
+				{
+					unit = unitManager.FindEmptyUnit();
+					if (unit!=nullptr)
+					{
+						Audio::Play(AUDIO_POSITION);
+						unit->SetPresId(command);
+						unit->SetNotice(2, false);
+						unit->OpenDoor();
+						result = true;
+					}
 				}
 			}
 			else if (command.find("MAN OPEN") == 0)

@@ -188,11 +188,15 @@ namespace IntelliStorage
 				break;
 			case CodeType::BarcodeCommand:
 				BSON::Bson::Deserialize(stream, strcommand);
-				if (strcommand!=nullptr)
-				{
-					if (StrCommandDelegate)
-						StrCommandDelegate(strcommand->Command);
-				}
+				response.reset(new CommandResult);
+				response->Command = (uint8_t)CodeType::BarcodeCommand;
+				response->NodeId = 0;
+				response->Result = false;
+				if (strcommand!=nullptr && StrCommandDelegate)
+					response->Result = StrCommandDelegate(strcommand->Command);	
+				buffer = BSON::Bson::Serialize(response, bufferSize);
+					if (buffer!=nullptr && bufferSize>0)
+						tcp.SendData((uint8_t)CodeType::CommandResponse, buffer.get(), bufferSize);
 				break;
 			case CodeType::CodeWhoAmI:
 				WhoAmI();
