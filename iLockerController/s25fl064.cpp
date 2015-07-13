@@ -54,7 +54,7 @@ namespace Spansion
 	{
 		WaitForWriting();
 		address &= MAX_ADDRESS;
-		uint8_t *command = new uint8_t[5];
+		uint8_t command[5];
 		command[0] = COMMAND_FAST_READ;
 		command[1] = (address>>16) & 0xff;
 		command[2] = (address>>8) & 0xff;
@@ -66,7 +66,6 @@ namespace Spansion
 		driver->Receive(data, length);
 		SpiSync();
 		HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
-		delete[] command;
 	}
 	
   void Flash::SpiSync()

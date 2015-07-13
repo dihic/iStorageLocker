@@ -30,8 +30,8 @@ void Keyboard::USBH_Thread (void const *arg) {
   while (1) {
     con = USBH_HID_GetDeviceStatus(0) == usbOK;  /* Get kbd connection status */
     if ((con ^ con_ex) & 1) {                /* If connection status changed  */
-      //priority = osThreadGetPriority(readTid);
-//      osThreadSetPriority(readTid, osPriorityAboveNormal);
+ //     priority = osThreadGetPriority(readTid);
+ //     osThreadSetPriority(readTid, osPriorityAboveNormal);
       if (con) {
         //USBH_HID_Write (0,(uint8_t *)&out,1);/* Turn on NUM LED               */
         cout<<"Keyboard connected"<<endl;
@@ -69,12 +69,12 @@ void Keyboard::KeyRead_Thread (void const *arg)
 			do {
 				ch = USBH_HID_GetKeyboardKey(0);
 			} while (ch < 0);
-			osThreadSetPriority (osThreadGetId(), osPriorityAboveNormal);
+			//osThreadSetPriority (osThreadGetId(), osPriorityAboveNormal);
 			if (ch==0x0A || ch==0x0D)
 				break;
 			str.push_back(ch);
 		}
-		osThreadSetPriority (osThreadGetId(), osPriorityNormal);
+		//osThreadSetPriority (osThreadGetId(), osPriorityNormal);
 		
 		if (str.length()>2 && str.substr(0,2)=="SS")
 		{

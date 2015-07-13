@@ -16,6 +16,8 @@
         #define RTE_Compiler_IO_STDERR_ITM      /* Compiler I/O: STDERR ITM */
 #define RTE_Compiler_IO_STDOUT          /* Compiler I/O: STDOUT */
         #define RTE_Compiler_IO_STDOUT_ITM      /* Compiler I/O: STDOUT ITM */
+#define RTE_Compiler_IO_TTY             /* Compiler I/O: TTY */
+        #define RTE_Compiler_IO_TTY_ITM         /* Compiler I/O: TTY ITM */
 #define RTE_DEVICE_FRAMEWORK_CLASSIC
 #define RTE_DEVICE_HAL_CAN
 #define RTE_DEVICE_HAL_COMMON

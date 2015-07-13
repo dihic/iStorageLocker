@@ -339,7 +339,7 @@ namespace Skewworks
 	{
 		while (HAL_GPIO_ReadPin(config->dreq_port, config->dreq_pin) == GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_RESET);
-		uint8_t *command = new uint8_t[8];
+		uint8_t command[8];
 		command[0] = 0x03;
 		command[1] = address;
 		command[2] = command[3] = 0;
@@ -348,7 +348,6 @@ namespace Skewworks
 		HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_SET);
 		uint16_t temp = command[6]<<8;
 		temp |= command[7];
-		delete[] command;
 		return temp;
 	}
 	
@@ -356,7 +355,7 @@ namespace Skewworks
 	{
 		while (HAL_GPIO_ReadPin(config->dreq_port, config->dreq_pin) == GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(config->cs_port, config->cs_pin, GPIO_PIN_RESET);
-		uint8_t *command = new uint8_t[4];
+		uint8_t command[4];
 		command[0] = 0x02;
 		command[1] = address;
 		command[2] = data >> 8;

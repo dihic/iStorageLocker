@@ -9,7 +9,7 @@ namespace IntelliStorage
 {
 
 	StorageUnit::StorageUnit(boost::shared_ptr<CANExtended::CanEx> &ex, uint16_t id)
-		:	CanDevice(ex, id), lastCardType(0), 
+		:	CanDevice(ex, id), lastCardType(0), lastDoorState(0),
 			blinking(false),cardChanged(false),doorChanged(false),dataArrival(false)
 	{
 		card.reset(new RfidData);
