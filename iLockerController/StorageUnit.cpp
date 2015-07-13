@@ -18,6 +18,10 @@ namespace IntelliStorage
 		card->CardId.clear();
 		card->PresId.clear();
 		memoryData = (const uint8_t *)(CARD_ADDR + ((id&0xff)<<8));
+	}
+	
+	void StorageUnit::NoticeFromMemory()
+	{
 		if (memoryData[0]!=0 && memoryData[0]!=0xff)
 		{
 			card->PresId.append(reinterpret_cast<const char *>(memoryData+1), memoryData[0]);
@@ -44,7 +48,7 @@ namespace IntelliStorage
 		boost::shared_ptr<std::uint8_t[]> data = boost::make_shared<std::uint8_t[]>(1);
 		data[0]=1;
 		WriteAttribute(DeviceAttribute::ControlDoor, data, 1);
-		doorChanged = true;
+		//doorChanged = true;
 	}
 
 	void StorageUnit::UpdateCard()
@@ -80,6 +84,9 @@ namespace IntelliStorage
 			blinking = (level>=2);
 			boost::shared_ptr<std::uint8_t[]> data = boost::make_shared<std::uint8_t[]>(1);
 			data[0]=level;
+#ifdef DEBUG_PRINT
+			cout<<"Set Notice "<<(int)level<<(force?" Force":"")<<endl;
+#endif
 			WriteAttribute(DeviceAttribute::ControlLED, data, 1);
 		}
 	}

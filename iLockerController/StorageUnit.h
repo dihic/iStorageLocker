@@ -34,12 +34,12 @@ namespace IntelliStorage
 		private:
 			static string GenerateId(const uint8_t *id, size_t len);
 			boost::shared_ptr<RfidData> card;
-			uint8_t lastCardType;
-			uint8_t lastDoorState;
-		  bool blinking;
-			bool cardChanged;
-			bool doorChanged;
-			bool dataArrival;
+			volatile uint8_t lastCardType;
+			volatile uint8_t lastDoorState;
+		  volatile bool blinking;
+			volatile bool cardChanged;
+			volatile bool doorChanged;
+			volatile bool dataArrival;
 			
 			const uint8_t *memoryData;
 		public:
@@ -49,6 +49,7 @@ namespace IntelliStorage
 			StorageUnit(boost::shared_ptr<CANExtended::CanEx> &ex, std::uint16_t id);
 			virtual ~StorageUnit() {}
 			
+			void NoticeFromMemory();
 			void SetNotice(uint8_t level, bool force);
 			void OpenDoor();
 			

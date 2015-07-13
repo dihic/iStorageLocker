@@ -142,7 +142,9 @@ bool ReadKBLine(string command)
 				}
 				else
 				{
-					command.erase(0, 8);
+					if (command.length() < 9)
+						break;
+					command.erase(0, 9);
 					if (command == "ALL")
 					{
 						result = true;
@@ -225,7 +227,7 @@ void HeartbeatArrival(uint16_t sourceId, const std::uint8_t *data, std::uint8_t 
 	if (sourceId & 0x100)
 	{
 		auto unit = unitManager.FindUnit(sourceId);
-		if (unit!=nullptr)
+		if (unit==nullptr)
 		{
 #ifdef DEBUG_PRINT
 			cout<<"#"<<++dc<<" DeviceID: "<<(sourceId & 0xff)<<" Added"<<endl;
@@ -235,6 +237,7 @@ void HeartbeatArrival(uint16_t sourceId, const std::uint8_t *data, std::uint8_t 
 			unit->ReadCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceReadResponse);
 			unit->WriteCommandResponse.bind(ethEngine.get(), &NetworkEngine::DeviceWriteResponse);
 			unitManager.Add(sourceId, unit);
+			unit->NoticeFromMemory();
 		}
 	}
 }
@@ -243,7 +246,8 @@ static void UpdateWorker (void const *argument)
 {
 	while(1)
 	{
-		configComm->DataReceiver();
+		CanEx->Poll();
+		ethEngine->Process();
 		osThreadYield();
 	}
 }
@@ -253,7 +257,6 @@ static void UpdateUnits(void const *argument)  //Prevent missing status
 {
 	while(1)
 	{
-		CanEx->Poll();
 		unitManager.Traversal();	//Update all units
 		osThreadYield();
 	}
@@ -345,10 +348,10 @@ int main()
 	
 	//osThreadCreate(osThread(UpdateNetwork), NULL);
 	
+	//osThreadSetPriority (osThreadGetId(), osPriorityAboveNormal);
   while(1) 
 	{
 		net_main();
-    ethEngine->Process();
 		osThreadYield();
   }
 }

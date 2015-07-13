@@ -32,6 +32,7 @@ NetworkConfig::NetworkConfig(ConfigComm *u)
 {
 	comm.OnCommandArrivalEvent.bind(this, &NetworkConfig::CommandArrival);
 	Init();
+	comm.Start();
 }
 
 void NetworkConfig::Init()
