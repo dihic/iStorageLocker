@@ -9,12 +9,12 @@
 
   <project>
     <PathAndName>.\iLockerController\iStorageLockerController.uvprojx</PathAndName>
-    <NodeIsActive>1</NodeIsActive>
     <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 
   <project>
     <PathAndName>.\iLockerUnit\iStorageTCMUnit.uvproj</PathAndName>
+    <NodeIsActive>1</NodeIsActive>
     <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 

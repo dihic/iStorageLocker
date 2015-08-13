@@ -21,7 +21,7 @@
 //   <i>This is the size of a memory pool in bytes. Buffers for
 //   <i>Network packets are allocated from this memory pool.
 //   <i>Default: 12000 bytes
-#define NET_MEM_SIZE            3000
+#define NET_MEM_SIZE            5000
 
 // </h>
 
