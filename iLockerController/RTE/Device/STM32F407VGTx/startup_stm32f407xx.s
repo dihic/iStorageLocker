@@ -1,8 +1,8 @@
-;******************** (C) COPYRIGHT 2014 STMicroelectronics ********************
+;******************** (C) COPYRIGHT 2015 STMicroelectronics ********************
 ;* File Name          : startup_stm32f407xx.s
 ;* Author             : MCD Application Team
-;* Version            : V2.1.0
-;* Date               : 19-June-2014
+;* Version            : V2.3.1
+;* Date               : 03-April-2015
 ;* Description        : STM32F407xx devices vector table for MDK-ARM toolchain. 
 ;*                      This module performs:
 ;*                      - Set the initial SP
@@ -182,16 +182,16 @@ __Vectors_Size  EQU  __Vectors_End - __Vectors
                 AREA    |.text|, CODE, READONLY
 
 ; Reset handler
-Reset_Handler   PROC
-                EXPORT  Reset_Handler             [WEAK]
-								IMPORT  SystemInit
-								IMPORT  __main
+Reset_Handler    PROC
+                 EXPORT  Reset_Handler             [WEAK]
+        IMPORT  SystemInit
+        IMPORT  __main
 
-								LDR     R0, =SystemInit
-                BLX     R0
-                LDR     R0, =__main
-                BX      R0
-                ENDP
+                 LDR     R0, =SystemInit
+                 BLX     R0
+                 LDR     R0, =__main
+                 BX      R0
+                 ENDP
 
 ; Dummy Exception Handlers (infinite loops which can be modified)
 

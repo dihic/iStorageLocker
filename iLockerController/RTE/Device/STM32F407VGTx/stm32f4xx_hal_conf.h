@@ -2,13 +2,13 @@
   ******************************************************************************
   * @file    stm32f4xx_hal_conf.h
   * @author  MCD Application Team
-  * @version V1.1.0 modified by ARM
-  * @date    19-June-2014
-  * @brief   HAL configuration file. 
+  * @version V1.3.1 modified by ARM
+  * @date    25-March-2015
+  * @brief   HAL configuration file
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2014 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2015 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -65,6 +65,9 @@
 #endif
 #ifdef RTE_DEVICE_HAL_CRC
 #define HAL_CRC_MODULE_ENABLED  
+#endif
+#ifdef RTE_DEVICE_HAL_CEC
+#define HAL_CEC_MODULE_ENABLED
 #endif
 #ifdef RTE_DEVICE_HAL_CRYP
 #define HAL_CRYP_MODULE_ENABLED  
@@ -123,6 +126,9 @@
 #ifdef RTE_DEVICE_HAL_PWR
 #define HAL_PWR_MODULE_ENABLED   
 #endif
+#ifdef RTE_DEVICE_HAL_QSPI
+#define HAL_QSPI_MODULE_ENABLED   
+#endif
 #if defined (RTE_DEVICE_HAL_RCC) || defined (RTE_DEVICE_HAL_COMMON)
 #define HAL_RCC_MODULE_ENABLED 
 #endif
@@ -168,6 +174,12 @@
 #ifdef RTE_DEVICE_HAL_HCD
 #define HAL_HCD_MODULE_ENABLED
 #endif
+#ifdef RTE_DEVICE_HAL_FMPI2C
+#define HAL_FMPI2C_MODULE_ENABLED
+#endif
+#ifdef RTE_DEVICE_HAL_SPDIFRX
+#define HAL_SPDIFRX_MODULE_ENABLED
+#endif
 
 
 /* ########################## HSE/HSI Values adaptation ##################### */
@@ -197,10 +209,10 @@
   * @brief Internal Low Speed oscillator (LSI) value.
   */
 #if !defined  (LSI_VALUE) 
- #define LSI_VALUE  ((uint32_t)40000)    
+ #define LSI_VALUE  ((uint32_t)32000)       /*!< LSI Typical Value in Hz*/
 #endif /* LSI_VALUE */                      /*!< Value of the Internal Low Speed oscillator in Hz
                                              The real value may vary depending on the variations
-                                             in voltage and temperature.  */
+                                             in voltage and temperature.*/
 /**
   * @brief External Low Speed oscillator (LSE) value.
   */
@@ -456,6 +468,22 @@
 #ifdef HAL_HCD_MODULE_ENABLED
  #include "stm32f4xx_hal_hcd.h"
 #endif /* HAL_HCD_MODULE_ENABLED */
+   
+#ifdef HAL_QSPI_MODULE_ENABLED
+ #include "stm32f4xx_hal_qspi.h"
+#endif /* HAL_QSPI_MODULE_ENABLED */
+
+#ifdef HAL_CEC_MODULE_ENABLED
+ #include "stm32f4xx_hal_cec.h"
+#endif /* HAL_CEC_MODULE_ENABLED */
+
+#ifdef HAL_FMPI2C_MODULE_ENABLED
+ #include "stm32f4xx_hal_fmpi2c.h"
+#endif /* HAL_FMPI2C_MODULE_ENABLED */
+
+#ifdef HAL_SPDIFRX_MODULE_ENABLED
+ #include "stm32f4xx_hal_spdifrx.h"
+#endif /* HAL_SPDIFRX_MODULE_ENABLED */
    
 /* Exported macro ------------------------------------------------------------*/
 #ifdef  USE_FULL_ASSERT
